@@ -1,0 +1,181 @@
+# Time Configuration for Data Generation
+
+# Simulation Time Range
+simulation:
+  # 시작일과 종료일
+  start_date: "2024-07-01"
+  end_date: "2024-12-31"
+  duration_days: 184
+
+  # 시간대 설정
+  timezone: "Asia/Seoul"
+
+# Generation Mode
+mode:
+  # 'historical': 과거 데이터 일괄 생성
+  # 'realtime': 실시간 데이터 생성
+  # 'hybrid': 과거 데이터 + 실시간 추가
+  type: "historical"
+
+  # realtime 모드 설정
+  realtime:
+    generation_interval_seconds: 5
+    batch_size: 10
+
+# Working Calendar
+calendar:
+  # 근무일 (1=월요일, 7=일요일)
+  working_days: [1, 2, 3, 4, 5, 6]  # 월-토 근무
+
+  # 휴무일
+  holidays:
+    - "2024-08-15"  # 광복절
+    - "2024-09-16"  # 추석
+    - "2024-09-17"
+    - "2024-09-18"
+    - "2024-10-03"  # 개천절
+    - "2024-10-09"  # 한글날
+    - "2024-12-25"  # 성탄절
+
+  # 휴무일 생산율 (0 = 완전 휴무, 0.3 = 30% 가동)
+  holiday_production_rate: 0.3
+
+# Shift Configuration
+shifts:
+  # 3교대 설정
+  enabled: true
+
+  day:
+    id: "DAY"
+    name: "주간"
+    start: "08:00"
+    end: "16:00"
+    break_minutes: 60
+    production_factor: 1.0
+    quality_factor: 1.0
+    workers_available: 1.0
+
+  evening:
+    id: "EVENING"
+    name: "오후"
+    start: "16:00"
+    end: "00:00"
+    break_minutes: 60
+    production_factor: 0.95
+    quality_factor: 1.1
+    workers_available: 0.95
+
+  night:
+    id: "NIGHT"
+    name: "야간"
+    start: "00:00"
+    end: "08:00"
+    break_minutes: 60
+    production_factor: 0.85
+    quality_factor: 1.3
+    workers_available: 0.8
+
+# Data Generation Intervals
+intervals:
+  # 생산 실적
+  production:
+    granularity: "hour"  # hour, shift, day
+    realtime_interval_seconds: 300  # 5분
+
+  # 설비 상태
+  equipment_status:
+    granularity: "5min"
+    realtime_interval_seconds: 60
+
+  # 센서 데이터
+  sensor:
+    granularity: "1min"
+    realtime_interval_seconds: 10
+
+  # 품질 검사
+  quality:
+    granularity: "lot"  # lot 단위
+    inspection_interval_units: 100
+
+  # OEE
+  oee:
+    granularity: "hour"
+    calculation_window_hours: 1
+
+  # 다운타임
+  downtime:
+    granularity: "event"
+    minimum_duration_minutes: 5
+
+# Time-based Patterns
+patterns:
+  # 일간 패턴
+  daily:
+    # 시간대별 생산성 계수
+    hourly_factors:
+      "08": 0.9   # 시작 워밍업
+      "09": 1.0
+      "10": 1.0
+      "11": 1.0
+      "12": 0.7   # 점심시간
+      "13": 0.95
+      "14": 1.0
+      "15": 1.0
+      "16": 0.95  # 교대 준비
+      "17": 0.95
+      "18": 1.0
+      "19": 1.0
+      "20": 1.0
+      "21": 0.95
+      "22": 0.95
+      "23": 0.9
+      "00": 0.85  # 야간 시작
+      "01": 0.85
+      "02": 0.85
+      "03": 0.8
+      "04": 0.8
+      "05": 0.8
+      "06": 0.85
+      "07": 0.85
+
+  # 주간 패턴
+  weekly:
+    # 요일별 생산성 계수 (1=월요일)
+    daily_factors:
+      1: 0.95  # 월요일 (주 시작)
+      2: 1.0
+      3: 1.0
+      4: 1.0
+      5: 1.0
+      6: 0.9   # 토요일
+      7: 0.5   # 일요일 (선택적 가동)
+
+  # 월간 패턴
+  monthly:
+    # 월말 생산 증가 (주문 마감)
+    end_of_month_factor: 1.15
+    end_of_month_days: 3  # 마지막 3일
+
+  # 계절 패턴
+  seasonal:
+    # 분기별 수요 계수
+    quarterly_factors:
+      Q1: 0.9   # 1-3월 (설 연휴)
+      Q2: 1.0   # 4-6월
+      Q3: 1.1   # 7-9월 (여름 성수기)
+      Q4: 1.15  # 10-12월 (연말 수요)
+
+# Randomness Settings
+randomness:
+  # 전역 랜덤 시드 (재현 가능성)
+  seed: 42
+
+  # 데이터 변동성
+  noise:
+    production_count: 0.05  # ±5%
+    defect_rate: 0.10       # ±10%
+    cycle_time: 0.03        # ±3%
+    sensor_reading: 0.02    # ±2%
+
+  # 이벤트 발생 확률 조정
+  event_probability_scale: 1.0

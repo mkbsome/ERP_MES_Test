@@ -1,0 +1,96 @@
+# 생산 모듈 시나리오
+# 제조오더 → MES작업 → 생산실적 → 품질 흐름
+
+production_scenario:
+  period:
+    start: "2024-01-01"
+    end: "today"
+
+  # 제조오더 (ERP)
+  work_orders:
+    monthly_count: 80  # 월 평균 제조오더
+    variance: 15%
+
+    # 상태별 분포
+    status_distribution:
+      PLANNED: 5%
+      RELEASED: 10%
+      IN_PROGRESS: 20%
+      COMPLETED: 60%
+      CANCELLED: 5%
+
+    # 수주 연계율 (수주 기반 vs 재고 보충)
+    sales_order_linked: 70%
+
+    # 수량 범위
+    quantity_range:
+      min: 100
+      max: 5000
+
+  # MES 작업지시
+  production_orders:
+    # 제조오더당 작업지시 수
+    per_work_order:
+      min: 1
+      max: 3
+
+    # 상태별 분포
+    status_distribution:
+      WAITING: 5%
+      IN_PROGRESS: 15%
+      PAUSED: 5%
+      COMPLETED: 75%
+
+  # 생산실적
+  production_results:
+    # 양품율
+    yield_rate:
+      avg: 97%
+      min: 92%
+      max: 99.5%
+
+    # 불량 유형 분포
+    defect_types:
+      외관불량: 25%
+      치수불량: 20%
+      기능불량: 15%
+      오삽: 15%
+      미삽: 10%
+      쇼트: 10%
+      기타: 5%
+
+  # 설비 가동
+  equipment:
+    # OEE 목표
+    oee_target: 85%
+
+    # 가동률
+    availability:
+      avg: 92%
+      min: 85%
+
+    # 성능률
+    performance:
+      avg: 95%
+      min: 88%
+
+    # 품질률
+    quality:
+      avg: 98%
+      min: 95%
+
+    # 비가동 유형
+    downtime_types:
+      계획정지: 30%      # PM, 휴식
+      고장정지: 20%
+      품질정지: 15%
+      자재대기: 15%
+      셋업: 10%
+      기타: 10%
+
+  # 자재 투입
+  material_consumption:
+    # BOM 대비 실제 사용률
+    usage_rate:
+      avg: 102%  # 약간의 로스
+      max: 110%

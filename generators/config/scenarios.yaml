@@ -1,0 +1,1325 @@
+# Scenario Configuration for AI Use Cases
+# This file defines all scenarios that inject anomalies and patterns for AI testing
+# 모듈별 4~5개 시나리오 (총 50+ 시나리오)
+
+# Global settings
+settings:
+  default_enabled: true
+  random_seed: 42
+  base_defect_rate: 0.015  # 1.5%
+  base_oee: 0.85
+
+# ############################################################################
+# MES 모듈 시나리오
+# ############################################################################
+
+# ============================================================
+# MES-1. 생산관리 시나리오 (Production Management)
+# ============================================================
+mes_production_scenarios:
+
+  # 시나리오 1: 생산 목표 미달
+  production_target_miss:
+    name: "생산 목표 미달 시나리오"
+    description: "일일 생산 목표 대비 실적이 부족한 상황"
+    enabled: true
+    ai_use_cases: ["CHECK", "FIND_CAUSE", "COMPARE"]
+    trigger:
+      type: scheduled
+      start_date: "2024-08-01"
+      duration_days: 5
+    target:
+      lines: ["SMT-L01", "SMT-L02"]
+    parameters:
+      target_achievement_rate: 0.75  # 75% 달성
+      primary_causes:
+        - cause: "equipment_downtime"
+          contribution: 0.4
+        - cause: "material_shortage"
+          contribution: 0.35
+        - cause: "quality_issue"
+          contribution: 0.25
+    correlation:
+      cause_type: "multiple_factors"
+      linked_scenarios: ["equipment_breakdown", "material_delay"]
+    expected_ai_response:
+      judgment: "UNDERPERFORMING"
+      severity: "warning"
+      root_causes: ["equipment_downtime", "material_shortage"]
+
+  # 시나리오 2: 생산성 급증 (긍정적)
+  productivity_spike:
+    name: "생산성 급증 시나리오"
+    description: "예상보다 높은 생산성을 보이는 상황"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "FIND_CAUSE", "TREND"]
+    trigger:
+      type: scheduled
+      start_date: "2024-09-15"
+      duration_days: 7
+    target:
+      lines: ["SMT-L03"]
+    parameters:
+      productivity_multiplier: 1.25
+      causes:
+        - "new_worker_training_complete"
+        - "process_optimization"
+    expected_ai_response:
+      anomaly_type: "positive"
+      recommendation: "document_best_practices"
+
+  # 시나리오 3: 사이클 타임 증가
+  cycle_time_increase:
+    name: "사이클 타임 증가 시나리오"
+    description: "표준 사이클 타임보다 실제 사이클 타임이 증가"
+    enabled: true
+    ai_use_cases: ["TREND", "FIND_CAUSE", "PREDICT"]
+    trigger:
+      type: condition
+      condition: "cycle_time > standard_cycle_time * 1.15"
+    target:
+      lines: ["SMT-L01"]
+      equipment: ["SMT-L01-MOUNTER-01"]
+    parameters:
+      cycle_time_increase_percent: 18
+      degradation_pattern: "gradual"
+    correlation:
+      cause_type: "equipment_aging"
+      indicator: "mounter_speed"
+    expected_ai_response:
+      trend: "increasing"
+      recommendation: "equipment_tuning"
+
+  # 시나리오 4: 작업지시 지연 누적
+  work_order_delay:
+    name: "작업지시 지연 시나리오"
+    description: "작업지시 완료 지연이 누적되는 상황"
+    enabled: true
+    ai_use_cases: ["TREND", "PREDICT", "NOTIFY"]
+    trigger:
+      type: scheduled
+      start_date: "2024-10-10"
+      duration_days: 10
+    parameters:
+      delay_accumulation_rate: 0.1  # 일 10% 누적
+      affected_orders_percent: 30
+    expected_ai_response:
+      prediction: "delivery_delay_risk"
+      notification: "schedule_adjustment_needed"
+
+  # 시나리오 5: 야간 생산 효율 저하
+  night_shift_efficiency_drop:
+    name: "야간 생산 효율 저하"
+    description: "야간 시프트의 생산 효율이 주간 대비 현저히 낮음"
+    enabled: true
+    ai_use_cases: ["COMPARE", "FIND_CAUSE", "WHAT_IF"]
+    trigger:
+      type: always
+    parameters:
+      night_vs_day_efficiency: 0.72  # 주간 대비 72%
+      causes:
+        - "reduced_supervision"
+        - "fatigue"
+        - "skill_gap"
+    expected_ai_response:
+      comparison_result: "significant_gap"
+      recommendation: "night_shift_improvement_plan"
+
+# ============================================================
+# MES-2. 설비관리 시나리오 (Equipment Management)
+# ============================================================
+mes_equipment_scenarios:
+
+  # 시나리오 1: 예지보전 필요
+  predictive_maintenance_needed:
+    name: "예지보전 필요 시나리오"
+    description: "센서 데이터 기반 고장 예측 가능한 상황"
+    enabled: true
+    ai_use_cases: ["PREDICT", "DETECT_ANOMALY", "CHECK"]
+    trigger:
+      type: condition
+      condition: "run_hours / mtbf > 0.85"
+    target:
+      equipment: ["SMT-L01-MOUNTER-01", "SMT-L02-REFLOW-01"]
+    parameters:
+      sensor_patterns:
+        temperature:
+          pattern: "increasing"
+          daily_increase: 2.0
+          threshold: 280
+        vibration:
+          pattern: "increasing"
+          daily_increase: 0.15
+          threshold: 2.0
+        current:
+          pattern: "fluctuating"
+          variance_increase: 1.5
+    expected_ai_response:
+      prediction: "failure_within_48h"
+      confidence: 0.85
+      recommendation: "immediate_maintenance"
+
+  # 시나리오 2: 돌발 고장
+  sudden_breakdown:
+    name: "돌발 고장 시나리오"
+    description: "예기치 않은 설비 고장 발생"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "FIND_CAUSE", "NOTIFY"]
+    trigger:
+      type: random
+      probability: 0.02
+    target:
+      equipment_types: ["MOUNTER", "REFLOW"]
+    parameters:
+      downtime_range: [60, 240]
+      failure_codes:
+        - code: "MOTOR_FAULT"
+          probability: 0.3
+        - code: "SENSOR_ERROR"
+          probability: 0.25
+        - code: "BOARD_FAULT"
+          probability: 0.2
+        - code: "PNEUMATIC_FAIL"
+          probability: 0.15
+        - code: "POWER_ISSUE"
+          probability: 0.1
+    expected_ai_response:
+      alert_type: "equipment_down"
+      notification: "immediate"
+
+  # 시나리오 3: OEE 저하
+  oee_degradation:
+    name: "OEE 저하 시나리오"
+    description: "특정 라인의 OEE 점진적 저하"
+    enabled: true
+    ai_use_cases: ["TREND", "CHECK", "COMPARE"]
+    trigger:
+      type: scheduled
+      start_date: "2024-10-01"
+      duration_days: 7
+    target:
+      lines: ["SMT-L02"]
+    parameters:
+      availability_drop: 0.10
+      performance_drop: 0.08
+      quality_stable: true
+      primary_downtime_reasons:
+        - reason: "changeover"
+          increase_factor: 2.0
+        - reason: "material_wait"
+          increase_factor: 1.5
+    expected_ai_response:
+      trend: "decreasing"
+      primary_cause: "changeover_time"
+
+  # 시나리오 4: 설비 가동률 편차
+  equipment_utilization_variance:
+    name: "설비 가동률 편차 시나리오"
+    description: "동일 유형 설비간 가동률 차이 발생"
+    enabled: true
+    ai_use_cases: ["COMPARE", "RANK", "FIND_CAUSE"]
+    trigger:
+      type: always
+    target:
+      equipment_type: "MOUNTER"
+    parameters:
+      utilization_variance:
+        "SMT-L01-MOUNTER-01": 0.92
+        "SMT-L01-MOUNTER-02": 0.88
+        "SMT-L02-MOUNTER-01": 0.75
+        "SMT-L02-MOUNTER-02": 0.82
+    expected_ai_response:
+      lowest_performer: "SMT-L02-MOUNTER-01"
+      recommendation: "investigate_root_cause"
+
+  # 시나리오 5: 보전 주기 초과
+  maintenance_overdue:
+    name: "보전 주기 초과 시나리오"
+    description: "예방보전 주기를 초과한 설비 존재"
+    enabled: true
+    ai_use_cases: ["CHECK", "PREDICT", "NOTIFY"]
+    trigger:
+      type: condition
+      condition: "days_since_maintenance > maintenance_interval * 1.2"
+    target:
+      equipment: ["SMT-L01-PRINTER-01", "SMT-L02-AOI-01"]
+    parameters:
+      overdue_days: 15
+      risk_increase_per_day: 0.02
+    expected_ai_response:
+      alert: "maintenance_overdue"
+      risk_level: "high"
+      recommendation: "schedule_immediate_pm"
+
+# ============================================================
+# MES-3. 품질관리 시나리오 (Quality Management)
+# ============================================================
+mes_quality_scenarios:
+
+  # 시나리오 1: 불량률 급증
+  defect_rate_spike:
+    name: "불량률 급증 시나리오"
+    description: "특정 라인에서 불량률이 급격히 증가하는 상황"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "FIND_CAUSE", "CHECK"]
+    trigger:
+      type: scheduled
+      start_date: "2024-08-15"
+      duration_days: 3
+    target:
+      lines: ["SMT-L01"]
+    parameters:
+      spike_defect_rate: 0.06
+      dominant_defect: "BRIDGE"
+      secondary_defect: "INSUFFICIENT"
+    correlation:
+      cause_type: "material_lot"
+      cause_id: "LOT-2024-0815"
+      vendor: "VENDOR-003"
+    expected_ai_response:
+      judgment: "HIGH_DEFECT"
+      severity: "critical"
+      root_cause: "material_lot_quality"
+
+  # 시나리오 2: 점진적 품질 저하
+  gradual_quality_degradation:
+    name: "점진적 품질 저하 시나리오"
+    description: "설비 마모로 인한 품질 점진적 저하"
+    enabled: true
+    ai_use_cases: ["TREND", "PREDICT", "FIND_CAUSE"]
+    trigger:
+      type: scheduled
+      start_date: "2024-09-01"
+      duration_days: 14
+    target:
+      equipment: ["SMT-L01-PRINTER-01"]
+      related_defect: "INSUFFICIENT"
+    parameters:
+      initial_defect_rate: 0.015
+      final_defect_rate: 0.035
+      degradation_pattern: "linear"
+    correlation:
+      cause_type: "equipment_wear"
+      indicator: "stencil_print_count"
+    expected_ai_response:
+      judgment: "DEGRADING"
+      recommendation: "schedule_maintenance"
+
+  # 시나리오 3: SPC 이탈
+  spc_out_of_control:
+    name: "SPC 관리 이탈 시나리오"
+    description: "통계적 공정 관리 한계 이탈"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "NOTIFY", "FIND_CAUSE"]
+    trigger:
+      type: condition
+      condition: "spc_value > ucl OR spc_value < lcl"
+    target:
+      parameters: ["solder_volume", "solder_height", "component_offset"]
+    parameters:
+      violation_type: "consecutive"  # consecutive, pattern, range
+      consecutive_count: 7
+      ucl_violations: 3
+    expected_ai_response:
+      alert: "spc_violation"
+      rule_violated: "7_consecutive_above_mean"
+      recommendation: "process_investigation"
+
+  # 시나리오 4: 제품별 품질 편차
+  product_quality_variance:
+    name: "제품별 품질 편차 시나리오"
+    description: "특정 제품의 불량률이 다른 제품보다 높음"
+    enabled: true
+    ai_use_cases: ["COMPARE", "RANK", "FIND_CAUSE"]
+    trigger:
+      type: always
+    target:
+      products: ["SMARTPHONE-MB", "IOT-MODULE"]
+    parameters:
+      defect_rates:
+        "SMARTPHONE-MB": 0.012
+        "POWER-BOARD": 0.015
+        "LED-DRIVER": 0.018
+        "IOT-MODULE": 0.028
+        "AUTOMOTIVE-ECU": 0.008
+    expected_ai_response:
+      highest_defect: "IOT-MODULE"
+      recommendation: "process_review"
+
+  # 시나리오 5: 검사 누락/오류
+  inspection_error:
+    name: "검사 오류 시나리오"
+    description: "AOI 검사 오탐지(False Positive/Negative) 증가"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "FIND_CAUSE", "CHECK"]
+    trigger:
+      type: scheduled
+      start_date: "2024-11-01"
+      duration_days: 5
+    target:
+      equipment: ["SMT-L01-AOI-01"]
+    parameters:
+      false_positive_rate: 0.08  # 8% 오탐
+      false_negative_rate: 0.02  # 2% 누락
+      causes: ["lighting_degradation", "algorithm_drift"]
+    expected_ai_response:
+      issue: "inspection_accuracy_degraded"
+      recommendation: "aoi_recalibration"
+
+# ============================================================
+# MES-4. 자재관리 시나리오 (Material Management)
+# ============================================================
+mes_material_scenarios:
+
+  # 시나리오 1: 공급업체 품질 문제
+  vendor_quality_issue:
+    name: "공급업체 품질 문제"
+    description: "특정 공급업체 자재의 품질 문제"
+    enabled: true
+    ai_use_cases: ["FIND_CAUSE", "DETECT_ANOMALY", "COMPARE"]
+    trigger:
+      type: scheduled
+      start_date: "2024-08-20"
+      duration_days: 5
+    target:
+      vendor: "VENDOR-003"
+      materials: ["IC-ARM-CORTEX-M4", "CAPACITOR-0402-100NF"]
+    parameters:
+      lot_prefix: "LOT-V003-0820"
+      defect_rate_multiplier: 3.0
+      affected_products: ["SMARTPHONE-MB", "IOT-MODULE"]
+    expected_ai_response:
+      root_cause: "vendor_material_quality"
+      recommendation: "vendor_audit"
+
+  # 시나리오 2: 피더 에러 증가
+  feeder_error_increase:
+    name: "피더 에러 증가 시나리오"
+    description: "SMT 피더 에러로 인한 부품 누락 증가"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "FIND_CAUSE", "TREND"]
+    trigger:
+      type: condition
+      condition: "feeder_error_count > daily_average * 2"
+    target:
+      equipment: ["SMT-L01-MOUNTER-01"]
+      feeders: ["FEEDER-001", "FEEDER-015", "FEEDER-023"]
+    parameters:
+      error_types:
+        - type: "PICKUP_FAIL"
+          increase: 2.5
+        - type: "RECOGNITION_FAIL"
+          increase: 1.8
+        - type: "PLACEMENT_ERROR"
+          increase: 1.5
+    correlation:
+      cause_type: "feeder_wear"
+      linked_defect: "MISSING"
+    expected_ai_response:
+      alert: "feeder_performance_degraded"
+      recommendation: "feeder_maintenance"
+
+  # 시나리오 3: 자재 LOT 추적성 이슈
+  material_traceability_issue:
+    name: "자재 추적성 이슈 시나리오"
+    description: "불량 발생 시 LOT 추적이 필요한 상황"
+    enabled: true
+    ai_use_cases: ["FIND_CAUSE", "CHECK", "REPORT"]
+    trigger:
+      type: scheduled
+      start_date: "2024-09-05"
+      duration_days: 3
+    target:
+      lot: "LOT-2024-0905-A"
+    parameters:
+      affected_production_count: 5000
+      defect_rate: 0.045
+      root_cause_component: "IC-POWER-MGMT"
+    expected_ai_response:
+      traceability_report: true
+      affected_range: "2024-09-05 ~ 2024-09-07"
+      recommendation: "recall_assessment"
+
+  # 시나리오 4: 자재 투입 오류
+  material_input_error:
+    name: "자재 투입 오류 시나리오"
+    description: "잘못된 자재가 투입된 상황"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "NOTIFY", "FIND_CAUSE"]
+    trigger:
+      type: random
+      probability: 0.005  # 0.5%
+    parameters:
+      error_types:
+        - type: "WRONG_COMPONENT"
+          probability: 0.4
+        - type: "WRONG_ORIENTATION"
+          probability: 0.3
+        - type: "MIXED_LOT"
+          probability: 0.3
+    expected_ai_response:
+      alert: "material_mismatch"
+      severity: "critical"
+      action: "stop_production"
+
+  # 시나리오 5: 재고 부족 예측
+  inventory_shortage_prediction:
+    name: "재고 부족 예측 시나리오"
+    description: "특정 자재의 재고 부족 예측"
+    enabled: true
+    ai_use_cases: ["PREDICT", "NOTIFY", "CHECK"]
+    trigger:
+      type: condition
+      condition: "inventory_level < safety_stock * 1.2"
+    target:
+      materials: ["CAPACITOR-0402-100NF", "RESISTOR-0603-10K", "IC-ARM-CORTEX-M4"]
+    parameters:
+      consumption_trend: "increasing"
+      days_until_stockout: 5
+      lead_time_days: 7
+    expected_ai_response:
+      prediction: "stockout_within_5_days"
+      recommendation: "emergency_order"
+
+# ============================================================
+# MES-5. 시스템/환경 시나리오 (System/Environment)
+# ============================================================
+mes_system_scenarios:
+
+  # 시나리오 1: 계절적 영향
+  seasonal_effect:
+    name: "계절적 영향 시나리오"
+    description: "계절에 따른 환경 변화가 품질에 미치는 영향"
+    enabled: true
+    ai_use_cases: ["FIND_CAUSE", "TREND", "PREDICT"]
+    trigger:
+      type: always
+    parameters:
+      summer:
+        temperature_range: [28, 35]
+        humidity_range: [60, 80]
+        affected_defects:
+          TOMBSTONE: 1.5
+          SOLDER_BALL: 1.3
+      winter:
+        temperature_range: [15, 22]
+        humidity_range: [30, 50]
+        affected_defects:
+          COLD_SOLDER: 1.4
+          CRACK: 1.2
+    expected_ai_response:
+      correlation_detected: true
+      recommendation: "environment_control"
+
+  # 시나리오 2: 온도 급변
+  temperature_fluctuation:
+    name: "온도 급변 시나리오"
+    description: "공장 내 온도 급격한 변화"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "FIND_CAUSE"]
+    trigger:
+      type: random
+      probability: 0.05
+    parameters:
+      temperature_delta: 5
+      duration_hours: 2
+      affected_equipment: ["REFLOW"]
+      profile_deviation: 0.1
+    expected_ai_response:
+      anomaly_type: "temperature_fluctuation"
+      impact: "reflow_profile_deviation"
+
+  # 시나리오 3: 시스템 지연/장애
+  system_latency:
+    name: "시스템 지연 시나리오"
+    description: "MES 시스템 응답 지연 또는 장애"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "NOTIFY", "CHECK"]
+    trigger:
+      type: random
+      probability: 0.01
+    parameters:
+      latency_increase_ms: 5000
+      data_loss_probability: 0.02
+      affected_functions: ["production_report", "quality_check"]
+    expected_ai_response:
+      alert: "system_performance_degraded"
+      recommendation: "check_infrastructure"
+
+  # 시나리오 4: 교대 인수인계 이슈
+  shift_handover_issue:
+    name: "교대 인수인계 이슈"
+    description: "교대 시점에 정보 전달 누락으로 인한 문제"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "FIND_CAUSE", "COMPARE"]
+    trigger:
+      type: always
+    parameters:
+      handover_times: ["08:00", "16:00", "00:00"]
+      issue_window_minutes: 30
+      productivity_drop: 0.15
+      error_increase: 1.3
+    expected_ai_response:
+      pattern: "shift_transition_issues"
+      recommendation: "improve_handover_process"
+
+  # 시나리오 5: 작업자 숙련도 영향
+  worker_skill_impact:
+    name: "작업자 숙련도 영향"
+    description: "작업자 숙련도에 따른 품질/생산성 차이"
+    enabled: true
+    ai_use_cases: ["COMPARE", "FIND_CAUSE", "WHAT_IF"]
+    trigger:
+      type: always
+    parameters:
+      skill_levels:
+        expert:
+          defect_factor: 0.8
+          productivity_factor: 1.1
+        intermediate:
+          defect_factor: 1.0
+          productivity_factor: 1.0
+        beginner:
+          defect_factor: 1.4
+          productivity_factor: 0.85
+    expected_ai_response:
+      correlation: "skill_to_quality"
+      recommendation: "training_program"
+
+
+# ############################################################################
+# ERP 모듈 시나리오
+# ############################################################################
+
+# ============================================================
+# ERP-1. 영업관리 시나리오 (Sales Management)
+# ============================================================
+erp_sales_scenarios:
+
+  # 시나리오 1: 대량 긴급 수주
+  urgent_large_order:
+    name: "긴급 대량 수주 시나리오"
+    description: "예상치 못한 대량 주문이 들어온 상황"
+    enabled: true
+    ai_use_cases: ["WHAT_IF", "PREDICT", "NOTIFY"]
+    trigger:
+      type: scheduled
+      start_date: "2024-09-10"
+      duration_days: 3
+    parameters:
+      order_size_multiplier: 3.0
+      lead_time_days: 10
+      customer: "CUSTOMER-VIP-001"
+      products: ["SMARTPHONE-MB", "IOT-MODULE"]
+    expected_ai_response:
+      capacity_assessment: "insufficient"
+      recommendation: "overtime_or_outsource"
+      delivery_risk: "high"
+
+  # 시나리오 2: 주문 취소 급증
+  order_cancellation_spike:
+    name: "주문 취소 급증 시나리오"
+    description: "주문 취소가 급격히 증가하는 상황"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "TREND", "FIND_CAUSE"]
+    trigger:
+      type: scheduled
+      start_date: "2024-11-15"
+      duration_days: 7
+    parameters:
+      cancellation_rate: 0.15  # 15%
+      normal_rate: 0.03
+      affected_customers: ["CUSTOMER-003", "CUSTOMER-007"]
+    correlation:
+      cause_type: "market_condition"
+      external_factors: ["economic_downturn", "competitor_promotion"]
+    expected_ai_response:
+      trend: "cancellation_increasing"
+      root_cause: "external_market"
+      recommendation: "customer_retention"
+
+  # 시나리오 3: 납기 지연 위험
+  delivery_delay_risk:
+    name: "납기 지연 위험 시나리오"
+    description: "여러 주문의 납기일 준수가 어려운 상황"
+    enabled: true
+    ai_use_cases: ["PREDICT", "CHECK", "NOTIFY"]
+    trigger:
+      type: condition
+      condition: "pending_orders > production_capacity * 1.3"
+    parameters:
+      at_risk_orders_percent: 25
+      average_delay_days: 5
+      penalty_risk: true
+    expected_ai_response:
+      risk_level: "high"
+      affected_orders: 12
+      recommendation: "prioritize_and_communicate"
+
+  # 시나리오 4: 계절성 수요 변동
+  seasonal_demand_variation:
+    name: "계절성 수요 변동"
+    description: "계절에 따른 수요 패턴 변화"
+    enabled: true
+    ai_use_cases: ["TREND", "PREDICT", "REPORT"]
+    trigger:
+      type: always
+    parameters:
+      seasonal_factors:
+        Q1: 0.85  # 설 연휴
+        Q2: 1.0
+        Q3: 1.15  # 성수기
+        Q4: 1.25  # 연말 특수
+    expected_ai_response:
+      pattern: "seasonal"
+      forecast_accuracy: 0.85
+
+  # 시나리오 5: 고객 신용 위험
+  customer_credit_risk:
+    name: "고객 신용 위험 시나리오"
+    description: "특정 고객의 결제 지연이 증가"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "PREDICT", "NOTIFY"]
+    trigger:
+      type: condition
+      condition: "overdue_amount > credit_limit * 0.8"
+    target:
+      customers: ["CUSTOMER-005", "CUSTOMER-012"]
+    parameters:
+      overdue_days_average: 45
+      overdue_amount_growth: 0.2  # 월 20% 증가
+    expected_ai_response:
+      risk_level: "high"
+      recommendation: "credit_review"
+
+# ============================================================
+# ERP-2. 구매관리 시나리오 (Purchase Management)
+# ============================================================
+erp_purchase_scenarios:
+
+  # 시나리오 1: 공급업체 납기 지연
+  supplier_delivery_delay:
+    name: "공급업체 납기 지연 시나리오"
+    description: "주요 공급업체의 납기 지연 발생"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "PREDICT", "NOTIFY"]
+    trigger:
+      type: scheduled
+      start_date: "2024-08-25"
+      duration_days: 10
+    target:
+      vendors: ["VENDOR-002", "VENDOR-004"]
+    parameters:
+      delay_days: 7
+      affected_materials: ["PCB-MAIN-4L", "IC-ARM-CORTEX-M4"]
+      production_impact: true
+    expected_ai_response:
+      alert: "supply_chain_disruption"
+      affected_production: "SMARTPHONE-MB"
+      recommendation: "alternative_supplier"
+
+  # 시나리오 2: 원자재 가격 급등
+  material_price_surge:
+    name: "원자재 가격 급등 시나리오"
+    description: "특정 원자재의 가격이 급등하는 상황"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "TREND", "WHAT_IF"]
+    trigger:
+      type: scheduled
+      start_date: "2024-10-01"
+      duration_days: 30
+    parameters:
+      price_increase_rate: 0.25  # 25% 인상
+      affected_materials: ["GOLD", "COPPER", "IC-MEMORY"]
+      cost_impact:
+        "SMARTPHONE-MB": 0.08
+        "AUTOMOTIVE-ECU": 0.12
+    expected_ai_response:
+      impact: "margin_reduction"
+      recommendation: "price_negotiation_or_redesign"
+
+  # 시나리오 3: 발주 최적화 필요
+  purchase_optimization_needed:
+    name: "발주 최적화 필요 시나리오"
+    description: "발주 패턴이 비효율적인 상황"
+    enabled: true
+    ai_use_cases: ["FIND_CAUSE", "WHAT_IF", "REPORT"]
+    trigger:
+      type: always
+    parameters:
+      issues:
+        - type: "frequent_small_orders"
+          frequency: "daily"
+          optimal: "weekly"
+        - type: "rush_orders"
+          percentage: 30
+          target: 10
+    expected_ai_response:
+      inefficiency_detected: true
+      savings_potential: 0.15
+      recommendation: "consolidate_orders"
+
+  # 시나리오 4: 공급업체 품질 등급 변동
+  vendor_quality_grade_change:
+    name: "공급업체 품질 등급 변동"
+    description: "공급업체의 품질 등급이 변동되는 상황"
+    enabled: true
+    ai_use_cases: ["TREND", "COMPARE", "NOTIFY"]
+    trigger:
+      type: scheduled
+      start_date: "2024-09-01"
+      duration_days: 60
+    target:
+      vendor: "VENDOR-003"
+    parameters:
+      grade_change: "B_to_C"
+      rejection_rate_increase: 0.05
+      quality_issues: ["dimension_variance", "coating_defect"]
+    expected_ai_response:
+      alert: "vendor_quality_downgrade"
+      recommendation: "vendor_development_or_replace"
+
+  # 시나리오 5: 수입 자재 통관 지연
+  import_clearance_delay:
+    name: "수입 통관 지연 시나리오"
+    description: "수입 자재의 통관이 지연되는 상황"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "PREDICT", "NOTIFY"]
+    trigger:
+      type: random
+      probability: 0.03
+    parameters:
+      delay_days_range: [3, 14]
+      affected_vendors: ["VENDOR-004"]  # 중국 공급업체
+      causes: ["customs_inspection", "documentation_issue", "holiday"]
+    expected_ai_response:
+      alert: "import_delay"
+      production_risk: true
+      recommendation: "safety_stock_review"
+
+# ============================================================
+# ERP-3. 재고관리 시나리오 (Inventory Management)
+# ============================================================
+erp_inventory_scenarios:
+
+  # 시나리오 1: 과잉 재고 발생
+  excess_inventory:
+    name: "과잉 재고 발생 시나리오"
+    description: "특정 자재/제품의 재고가 과다하게 쌓인 상황"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "FIND_CAUSE", "REPORT"]
+    trigger:
+      type: condition
+      condition: "inventory_level > max_stock * 1.5"
+    target:
+      materials: ["CAPACITOR-0805-10UF", "LED-0603-WHITE"]
+    parameters:
+      excess_percentage: 80
+      holding_cost_impact: 0.02  # 월 2%
+      obsolescence_risk: "medium"
+    expected_ai_response:
+      issue: "excess_inventory"
+      recommendation: "reduce_orders_or_promotion"
+
+  # 시나리오 2: 재고 정확도 불일치
+  inventory_accuracy_issue:
+    name: "재고 정확도 불일치 시나리오"
+    description: "시스템 재고와 실물 재고의 차이 발생"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "FIND_CAUSE", "CHECK"]
+    trigger:
+      type: scheduled
+      start_date: "2024-08-01"
+      duration_days: 30
+    parameters:
+      accuracy_rate: 0.92  # 목표 99%
+      variance_locations: ["WH-01-A", "WH-02-B"]
+      variance_materials: ["RESISTOR-0603-10K", "CAPACITOR-0402-100NF"]
+    expected_ai_response:
+      accuracy_gap: 0.07
+      root_causes: ["counting_error", "transaction_miss"]
+      recommendation: "cycle_count"
+
+  # 시나리오 3: 재고 회전율 저하
+  inventory_turnover_decline:
+    name: "재고 회전율 저하 시나리오"
+    description: "재고 회전율이 목표 대비 낮아지는 상황"
+    enabled: true
+    ai_use_cases: ["TREND", "COMPARE", "FIND_CAUSE"]
+    trigger:
+      type: scheduled
+      start_date: "2024-10-01"
+      duration_days: 90
+    parameters:
+      current_turnover: 8  # 회/년
+      target_turnover: 12
+      slow_moving_items_increase: 0.15
+    expected_ai_response:
+      trend: "turnover_declining"
+      recommendation: "inventory_reduction_program"
+
+  # 시나리오 4: 안전재고 부족
+  safety_stock_shortage:
+    name: "안전재고 부족 시나리오"
+    description: "주요 자재의 안전재고 수준 미달"
+    enabled: true
+    ai_use_cases: ["CHECK", "PREDICT", "NOTIFY"]
+    trigger:
+      type: condition
+      condition: "inventory_level < safety_stock"
+    target:
+      materials: ["IC-ARM-CORTEX-M4", "CAPACITOR-0402-100NF"]
+    parameters:
+      shortage_level: 0.6  # 안전재고의 60%
+      stockout_probability: 0.25
+      lead_time_days: 7
+    expected_ai_response:
+      alert: "safety_stock_breach"
+      stockout_risk: "high"
+      recommendation: "expedite_order"
+
+  # 시나리오 5: 창고 공간 부족
+  warehouse_space_shortage:
+    name: "창고 공간 부족 시나리오"
+    description: "창고 저장 공간이 부족해지는 상황"
+    enabled: true
+    ai_use_cases: ["PREDICT", "WHAT_IF", "NOTIFY"]
+    trigger:
+      type: condition
+      condition: "warehouse_utilization > 0.95"
+    target:
+      warehouses: ["WH-01", "WH-02"]
+    parameters:
+      current_utilization: 0.97
+      incoming_inventory: 500  # pallets
+      days_until_full: 3
+    expected_ai_response:
+      alert: "space_critical"
+      recommendation: "expedite_shipment_or_external_storage"
+
+# ============================================================
+# ERP-4. 회계관리 시나리오 (Accounting Management)
+# ============================================================
+erp_accounting_scenarios:
+
+  # 시나리오 1: 원가 상승 추이
+  cost_increase_trend:
+    name: "원가 상승 추이 시나리오"
+    description: "제품 원가가 지속적으로 상승하는 상황"
+    enabled: true
+    ai_use_cases: ["TREND", "FIND_CAUSE", "PREDICT"]
+    trigger:
+      type: scheduled
+      start_date: "2024-07-01"
+      duration_days: 180
+    parameters:
+      monthly_increase_rate: 0.02  # 월 2%
+      cost_components:
+        material: 0.6
+        labor: 0.25
+        overhead: 0.15
+      affected_products: ["SMARTPHONE-MB", "AUTOMOTIVE-ECU"]
+    expected_ai_response:
+      trend: "increasing"
+      primary_driver: "material_cost"
+      forecast_6m: 0.12  # 6개월 후 12% 증가
+
+  # 시나리오 2: 표준원가 대비 실제원가 차이
+  cost_variance_analysis:
+    name: "원가 차이 분석 시나리오"
+    description: "표준원가와 실제원가의 차이가 큰 상황"
+    enabled: true
+    ai_use_cases: ["COMPARE", "FIND_CAUSE", "REPORT"]
+    trigger:
+      type: always
+    parameters:
+      variance_threshold: 0.05  # 5%
+      variances:
+        material_price_variance: 0.08
+        material_quantity_variance: 0.03
+        labor_rate_variance: 0.02
+        labor_efficiency_variance: 0.06
+        overhead_variance: 0.04
+    expected_ai_response:
+      significant_variances: ["material_price", "labor_efficiency"]
+      recommendation: "investigate_causes"
+
+  # 시나리오 3: 수익성 악화
+  profitability_decline:
+    name: "수익성 악화 시나리오"
+    description: "특정 제품/고객의 수익성이 악화되는 상황"
+    enabled: true
+    ai_use_cases: ["TREND", "COMPARE", "FIND_CAUSE"]
+    trigger:
+      type: scheduled
+      start_date: "2024-09-01"
+      duration_days: 90
+    parameters:
+      margin_decline:
+        "IOT-MODULE": -0.05  # 마진 5%p 감소
+        "LED-DRIVER": -0.03
+      unprofitable_customers: ["CUSTOMER-008"]
+    expected_ai_response:
+      alert: "margin_erosion"
+      recommendation: "pricing_review"
+
+  # 시나리오 4: 매출채권 연체 증가
+  ar_aging_increase:
+    name: "매출채권 연체 증가 시나리오"
+    description: "매출채권 연체가 증가하는 상황"
+    enabled: true
+    ai_use_cases: ["TREND", "PREDICT", "NOTIFY"]
+    trigger:
+      type: scheduled
+      start_date: "2024-10-01"
+      duration_days: 60
+    parameters:
+      aging_distribution:
+        current: 0.60
+        "30_days": 0.20
+        "60_days": 0.12
+        "90_days": 0.05
+        "over_90": 0.03
+      bad_debt_risk: 0.02
+    expected_ai_response:
+      trend: "aging_increasing"
+      cash_flow_impact: "negative"
+      recommendation: "collection_focus"
+
+  # 시나리오 5: 예산 초과 경고
+  budget_overrun:
+    name: "예산 초과 경고 시나리오"
+    description: "특정 비용 항목이 예산을 초과하는 상황"
+    enabled: true
+    ai_use_cases: ["CHECK", "PREDICT", "NOTIFY"]
+    trigger:
+      type: condition
+      condition: "actual_expense > budget * 0.9"
+    parameters:
+      overrun_departments: ["생산부", "품질관리부"]
+      overrun_items:
+        - item: "유지보수비"
+          budget: 50000000
+          actual: 58000000
+        - item: "외주가공비"
+          budget: 30000000
+          actual: 35000000
+    expected_ai_response:
+      alert: "budget_warning"
+      forecast_year_end: "exceed_by_15%"
+      recommendation: "cost_control"
+
+# ============================================================
+# ERP-5. 인사급여관리 시나리오 (HR & Payroll Management)
+# ============================================================
+erp_hr_scenarios:
+
+  # 시나리오 1: 인력 부족 예측
+  workforce_shortage_prediction:
+    name: "인력 부족 예측 시나리오"
+    description: "생산 증가 대비 인력이 부족해질 예측"
+    enabled: true
+    ai_use_cases: ["PREDICT", "WHAT_IF", "NOTIFY"]
+    trigger:
+      type: condition
+      condition: "planned_production > current_capacity * 1.2"
+    parameters:
+      shortage_positions:
+        - position: "SMT 오퍼레이터"
+          shortage: 5
+        - position: "품질검사원"
+          shortage: 3
+      hiring_lead_time_days: 30
+    expected_ai_response:
+      prediction: "workforce_shortage"
+      impact: "production_constraint"
+      recommendation: "start_recruitment"
+
+  # 시나리오 2: 초과근무 급증
+  overtime_surge:
+    name: "초과근무 급증 시나리오"
+    description: "초과근무가 급격히 증가하는 상황"
+    enabled: true
+    ai_use_cases: ["TREND", "DETECT_ANOMALY", "FIND_CAUSE"]
+    trigger:
+      type: scheduled
+      start_date: "2024-09-15"
+      duration_days: 14
+    parameters:
+      overtime_increase: 2.5  # 평소 대비 2.5배
+      departments: ["생산1팀", "생산2팀"]
+      causes: ["urgent_orders", "equipment_issues"]
+    expected_ai_response:
+      trend: "overtime_increasing"
+      labor_cost_impact: 0.15
+      recommendation: "root_cause_resolution"
+
+  # 시나리오 3: 이직률 상승
+  turnover_rate_increase:
+    name: "이직률 상승 시나리오"
+    description: "특정 부서/직급의 이직률이 상승"
+    enabled: true
+    ai_use_cases: ["TREND", "FIND_CAUSE", "PREDICT"]
+    trigger:
+      type: scheduled
+      start_date: "2024-08-01"
+      duration_days: 120
+    parameters:
+      turnover_rate: 0.18  # 연 18%
+      target_rate: 0.10
+      high_turnover_groups:
+        - group: "신입사원_1년미만"
+          rate: 0.25
+        - group: "야간근무자"
+          rate: 0.22
+    expected_ai_response:
+      trend: "turnover_increasing"
+      cost_impact: "training_and_recruitment"
+      recommendation: "retention_program"
+
+  # 시나리오 4: 결근율 이상
+  absenteeism_anomaly:
+    name: "결근율 이상 시나리오"
+    description: "결근율이 비정상적으로 높아지는 상황"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "FIND_CAUSE", "COMPARE"]
+    trigger:
+      type: condition
+      condition: "absence_rate > normal_rate * 1.5"
+    parameters:
+      current_rate: 0.08
+      normal_rate: 0.04
+      peak_days: ["Monday", "Friday"]
+      departments: ["생산3팀"]
+    expected_ai_response:
+      anomaly: "high_absenteeism"
+      pattern: "weekend_adjacent"
+      recommendation: "investigate_causes"
+
+  # 시나리오 5: 급여 계산 오류
+  payroll_calculation_error:
+    name: "급여 계산 오류 시나리오"
+    description: "급여 계산에 오류가 발생하는 상황"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "CHECK", "NOTIFY"]
+    trigger:
+      type: random
+      probability: 0.02
+    parameters:
+      error_types:
+        - type: "overtime_miscalculation"
+          probability: 0.4
+        - type: "allowance_missing"
+          probability: 0.3
+        - type: "tax_deduction_error"
+          probability: 0.2
+        - type: "bonus_calculation_error"
+          probability: 0.1
+      affected_employees_range: [1, 10]
+    expected_ai_response:
+      alert: "payroll_error"
+      severity: "high"
+      recommendation: "immediate_correction"
+
+# ============================================================
+# ERP-6. 기준정보관리 시나리오 (Master Data Management)
+# ============================================================
+erp_master_scenarios:
+
+  # 시나리오 1: BOM 변경 영향 분석
+  bom_change_impact:
+    name: "BOM 변경 영향 분석 시나리오"
+    description: "BOM 변경이 원가/재고에 미치는 영향 분석"
+    enabled: true
+    ai_use_cases: ["WHAT_IF", "REPORT", "PREDICT"]
+    trigger:
+      type: scheduled
+      start_date: "2024-09-01"
+      duration_days: 7
+    parameters:
+      bom_changes:
+        - product: "SMARTPHONE-MB"
+          change_type: "component_substitute"
+          old_component: "CAPACITOR-0402-100NF"
+          new_component: "CAPACITOR-0402-100NF-V2"
+          cost_impact: 0.02
+    expected_ai_response:
+      impact_analysis:
+        cost_change: 0.02
+        inventory_obsolescence: 5000
+      recommendation: "phase_transition_plan"
+
+  # 시나리오 2: 마스터 데이터 불일치
+  master_data_inconsistency:
+    name: "마스터 데이터 불일치 시나리오"
+    description: "ERP-MES간 마스터 데이터 불일치"
+    enabled: true
+    ai_use_cases: ["DETECT_ANOMALY", "CHECK", "NOTIFY"]
+    trigger:
+      type: always
+    parameters:
+      inconsistency_types:
+        - type: "product_name_mismatch"
+          count: 15
+        - type: "unit_of_measure_different"
+          count: 8
+        - type: "price_discrepancy"
+          count: 23
+    expected_ai_response:
+      data_quality_score: 0.85
+      critical_issues: 5
+      recommendation: "data_cleansing"
+
+  # 시나리오 3: 신규 제품 도입
+  new_product_introduction:
+    name: "신규 제품 도입 시나리오"
+    description: "신규 제품 도입 시 준비 상태 점검"
+    enabled: true
+    ai_use_cases: ["CHECK", "REPORT", "NOTIFY"]
+    trigger:
+      type: scheduled
+      start_date: "2024-10-15"
+      duration_days: 30
+    parameters:
+      new_product: "SMARTPHONE-MB-V2"
+      checklist:
+        - item: "BOM 등록"
+          status: "complete"
+        - item: "라우팅 설정"
+          status: "pending"
+        - item: "품질기준 수립"
+          status: "pending"
+        - item: "원가 산정"
+          status: "complete"
+    expected_ai_response:
+      readiness_score: 0.65
+      blockers: ["routing", "quality_standard"]
+      recommendation: "complete_pending_items"
+
+  # 시나리오 4: 공급업체 마스터 변경
+  vendor_master_change:
+    name: "공급업체 마스터 변경 시나리오"
+    description: "공급업체 정보 변경이 필요한 상황"
+    enabled: true
+    ai_use_cases: ["CHECK", "NOTIFY", "REPORT"]
+    trigger:
+      type: random
+      probability: 0.05
+    parameters:
+      change_types:
+        - type: "contact_update"
+        - type: "payment_terms_change"
+        - type: "certification_expiry"
+        - type: "price_agreement_renewal"
+    expected_ai_response:
+      pending_updates: 12
+      urgent_items: 3
+      recommendation: "vendor_review_meeting"
+
+  # 시나리오 5: 단가 갱신 필요
+  price_update_required:
+    name: "단가 갱신 필요 시나리오"
+    description: "자재/제품 단가 갱신이 필요한 상황"
+    enabled: true
+    ai_use_cases: ["CHECK", "COMPARE", "NOTIFY"]
+    trigger:
+      type: condition
+      condition: "days_since_price_update > 180"
+    parameters:
+      outdated_items_count: 150
+      categories: ["원자재", "포장재", "외주가공"]
+      price_variance_from_market: 0.08
+    expected_ai_response:
+      alert: "price_review_needed"
+      cost_impact_risk: "underestimated_costs"
+      recommendation: "price_negotiation"
+
+
+# ############################################################################
+# Correlation Rules (상관관계 규칙)
+# ############################################################################
+correlation_rules:
+  # MES 상관관계
+  mes_correlations:
+    # 자재 LOT → 품질
+    - source: "material.vendor_quality_grade"
+      target: "defect_rate"
+      correlation_type: "multiplicative"
+      parameters:
+        A: 0.8
+        B: 1.0
+        C: 1.5
+
+    # 설비 상태 → 품질
+    - source: "equipment.temperature"
+      target: "defect_rate"
+      correlation_type: "threshold"
+      parameters:
+        threshold: 270
+        below_factor: 1.0
+        above_factor: 1.5
+
+    - source: "equipment.vibration"
+      target: "defect_rate"
+      correlation_type: "linear"
+      parameters:
+        coefficient: 0.02
+        intercept: 1.0
+
+    - source: "equipment.run_hours_ratio"
+      target: "failure_probability"
+      correlation_type: "exponential"
+      parameters:
+        base: 2.0
+        scale: 0.01
+
+    # 환경 → 품질
+    - source: "environment.humidity"
+      target: "defect.TOMBSTONE"
+      correlation_type: "exponential"
+      parameters:
+        base: 1.02
+        reference: 50
+
+    - source: "environment.temperature_delta"
+      target: "defect.COLD_SOLDER"
+      correlation_type: "threshold"
+      parameters:
+        threshold: 5
+        below_factor: 1.0
+        above_factor: 1.8
+
+  # ERP 상관관계
+  erp_correlations:
+    # 수주량 → 생산계획
+    - source: "sales.order_volume"
+      target: "production.planned_quantity"
+      correlation_type: "linear"
+      parameters:
+        coefficient: 1.05
+        intercept: 0
+
+    # 원자재 가격 → 제품원가
+    - source: "purchase.material_price_index"
+      target: "accounting.product_cost"
+      correlation_type: "linear"
+      parameters:
+        coefficient: 0.6
+        intercept: 0
+
+    # 재고수준 → 발주량
+    - source: "inventory.stock_level"
+      target: "purchase.order_quantity"
+      correlation_type: "threshold"
+      parameters:
+        threshold: 1.0  # safety stock ratio
+        below_factor: 2.0
+        above_factor: 0.5
+
+    # 초과근무 → 품질
+    - source: "hr.overtime_hours"
+      target: "quality.defect_rate"
+      correlation_type: "linear"
+      parameters:
+        coefficient: 0.001
+        intercept: 1.0

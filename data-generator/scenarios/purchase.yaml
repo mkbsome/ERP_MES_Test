@@ -1,0 +1,71 @@
+# 구매 모듈 시나리오
+# 발주 → 입고 → 검수 → 재고 흐름
+
+purchase_scenario:
+  period:
+    start: "2024-01-01"
+    end: "today"
+
+  # 발주 생성 규칙
+  purchase_orders:
+    monthly_count: 40  # 월 평균 발주 건수
+    variance: 25%
+
+    # 상태별 분포
+    status_distribution:
+      DRAFT: 5%
+      APPROVED: 10%
+      ORDERED: 10%
+      PARTIAL_RECEIVED: 5%
+      RECEIVED: 60%
+      CLOSED: 10%
+
+    # 발주 품목
+    items_per_order:
+      min: 1
+      max: 10
+    quantity_range:
+      min: 100
+      max: 5000
+
+    # 발주 트리거 조건
+    triggers:
+      - type: "REORDER_POINT"  # 재주문점 도달
+        weight: 60%
+      - type: "MRP"            # MRP 기반
+        weight: 30%
+      - type: "MANUAL"         # 수동 발주
+        weight: 10%
+
+  # 입고 시나리오
+  goods_receipts:
+    # 발주 대비 입고율
+    receipt_rate: 98%
+
+    # 납기 준수율
+    on_time_rate: 85%
+
+    # 입고 지연 (영업일)
+    delay_days:
+      avg: 2
+      max: 7
+
+  # 검수 시나리오
+  inspections:
+    # 입고검사 합격률
+    pass_rate: 97%
+
+    # 불합격 처리
+    rejection_actions:
+      RETURN: 70%      # 반품
+      REWORK: 20%      # 재작업
+      ACCEPT_DEVIATION: 10%  # 특채
+
+  # 매입채무
+  payables:
+    # 결제 조건별 분포
+    payment_terms:
+      30일: 40%
+      45일: 35%
+      60일: 20%
+      90일: 5%

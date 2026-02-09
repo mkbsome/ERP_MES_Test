@@ -1,0 +1,421 @@
+# GreenBoard Electronics - 가상 기업 설정
+# ERP/MES 시뮬레이터용 기업 프로필
+
+company:
+  code: "GBE"
+  name: "(주)그린보드 일렉트로닉스"
+  name_en: "GreenBoard Electronics Co., Ltd."
+  business_no: "123-45-67890"
+  ceo: "김태호"
+  industry: "전자부품/PCB 제조"
+  founded: "2008-03-15"
+  employees: 350
+  annual_revenue_krw: 180000000000  # 1,800억원
+  currency: "KRW"
+  timezone: "Asia/Seoul"
+
+locations:
+  headquarters:
+    name: "본사/제1공장"
+    address: "경기도 화성시 동탄산업단지로 123"
+    area_sqm: 15000
+  plant2:
+    name: "제2공장"
+    address: "경기도 화성시 동탄산업단지로 125"
+    area_sqm: 10000
+
+# 시뮬레이션 기간 설정
+simulation:
+  start_date: "2024-07-01"
+  end_date: "2024-12-31"
+  days: 184
+  working_days_per_week: 5
+  shifts_per_day: 3
+  hours_per_shift: 8
+
+# 조직 구조
+organization:
+  departments:
+    - code: "MFG1"
+      name: "생산1팀"
+      type: "production"
+      lines: ["SMT-L01", "SMT-L02", "SMT-L03", "SMT-L04", "SMT-L05"]
+    - code: "MFG2"
+      name: "생산2팀"
+      type: "production"
+      lines: ["SMT-L06", "SMT-L07", "SMT-L08", "SMT-L09", "SMT-L10"]
+    - code: "THT"
+      name: "THT팀"
+      type: "production"
+      lines: ["THT-L01", "THT-L02"]
+    - code: "ASM"
+      name: "조립팀"
+      type: "production"
+      lines: ["ASM-L01", "ASM-L02", "ASM-L03"]
+    - code: "QC"
+      name: "품질관리팀"
+      type: "quality"
+    - code: "ENG"
+      name: "기술팀"
+      type: "engineering"
+    - code: "MTN"
+      name: "설비보전팀"
+      type: "maintenance"
+    - code: "SCM"
+      name: "구매/자재팀"
+      type: "supply_chain"
+    - code: "SLS"
+      name: "영업팀"
+      type: "sales"
+    - code: "FIN"
+      name: "재무팀"
+      type: "finance"
+    - code: "ADM"
+      name: "관리팀"
+      type: "admin"
+
+  cost_centers:
+    - code: "CC-P01"
+      name: "SMT 라인 1-5"
+      type: "production"
+      department: "MFG1"
+    - code: "CC-P02"
+      name: "SMT 라인 6-10"
+      type: "production"
+      department: "MFG2"
+    - code: "CC-P03"
+      name: "THT 라인"
+      type: "production"
+      department: "THT"
+    - code: "CC-P04"
+      name: "조립 라인"
+      type: "production"
+      department: "ASM"
+    - code: "CC-Q01"
+      name: "품질관리"
+      type: "indirect"
+      department: "QC"
+    - code: "CC-M01"
+      name: "설비보전"
+      type: "indirect"
+      department: "MTN"
+    - code: "CC-A01"
+      name: "관리/일반"
+      type: "overhead"
+
+# 생산 라인 설정
+production_lines:
+  smt_high_speed:
+    lines: ["SMT-L01", "SMT-L02", "SMT-L06", "SMT-L07"]
+    capacity_per_shift: 2400  # panels
+    equipment_sequence:
+      - type: "loader"
+        count: 1
+      - type: "printer"
+        count: 1
+      - type: "spi"
+        count: 1
+      - type: "mounter"
+        count: 3
+      - type: "reflow"
+        count: 1
+      - type: "aoi"
+        count: 1
+      - type: "unloader"
+        count: 1
+    products: ["MB-", "PB-"]
+
+  smt_mid_speed:
+    lines: ["SMT-L03", "SMT-L04", "SMT-L08", "SMT-L09"]
+    capacity_per_shift: 1800
+    equipment_sequence:
+      - type: "loader"
+        count: 1
+      - type: "printer"
+        count: 1
+      - type: "spi"
+        count: 1
+      - type: "mounter"
+        count: 2
+      - type: "reflow"
+        count: 1
+      - type: "aoi"
+        count: 1
+      - type: "unloader"
+        count: 1
+    products: ["LB-", "IM-"]
+
+  smt_flex:
+    lines: ["SMT-L05", "SMT-L10"]
+    capacity_per_shift: 1200
+    equipment_sequence:
+      - type: "loader"
+        count: 1
+      - type: "printer"
+        count: 1
+      - type: "spi"
+        count: 1
+      - type: "mounter"
+        count: 2
+      - type: "reflow"
+        count: 1
+      - type: "aoi"
+        count: 1
+      - type: "xray"
+        count: 1
+      - type: "unloader"
+        count: 1
+    products: ["AB-"]
+
+  tht:
+    lines: ["THT-L01", "THT-L02"]
+    capacity_per_shift: 600
+    equipment_sequence:
+      - type: "loader"
+        count: 1
+      - type: "insertion"
+        count: 2
+      - type: "wave"
+        count: 1
+      - type: "aoi"
+        count: 1
+      - type: "unloader"
+        count: 1
+    products: ["PB-", "AB-"]
+
+  assembly:
+    lines: ["ASM-L01", "ASM-L02", "ASM-L03"]
+    capacity_per_shift: 400
+    work_stations: 8
+    products: ["MB-", "PB-", "LB-", "IM-", "AB-"]
+
+# 제품군 정의
+product_families:
+  - code: "MB"
+    name: "메인보드"
+    name_en: "Main Board"
+    category: "consumer_electronics"
+    components_range: [150, 300]
+    unit_price_range: [25000, 85000]
+    cycle_time_sec: [35, 55]
+
+  - code: "PB"
+    name: "전원보드"
+    name_en: "Power Board"
+    category: "power_electronics"
+    components_range: [80, 150]
+    unit_price_range: [15000, 45000]
+    cycle_time_sec: [25, 40]
+
+  - code: "LB"
+    name: "LED 드라이버"
+    name_en: "LED Driver Board"
+    category: "lighting"
+    components_range: [50, 100]
+    unit_price_range: [8000, 25000]
+    cycle_time_sec: [20, 35]
+
+  - code: "IM"
+    name: "IoT 모듈"
+    name_en: "IoT Module"
+    category: "iot"
+    components_range: [60, 120]
+    unit_price_range: [12000, 35000]
+    cycle_time_sec: [25, 40]
+
+  - code: "AB"
+    name: "자동차용 보드"
+    name_en: "Automotive Board"
+    category: "automotive"
+    components_range: [200, 400]
+    unit_price_range: [45000, 150000]
+    cycle_time_sec: [45, 70]
+    quality_standard: "IATF16949"
+
+# 불량 유형 정의
+defect_types:
+  solder:
+    - code: "BRIDGE"
+      name: "솔더 브릿지"
+      name_en: "Solder Bridge"
+      severity: "major"
+      detection: ["aoi", "visual"]
+
+    - code: "OPEN"
+      name: "오픈 (납땜 불량)"
+      name_en: "Open Joint"
+      severity: "major"
+      detection: ["aoi", "ict"]
+
+    - code: "INSUFFICIENT"
+      name: "솔더 부족"
+      name_en: "Insufficient Solder"
+      severity: "minor"
+      detection: ["aoi", "visual"]
+
+    - code: "COLD"
+      name: "냉납"
+      name_en: "Cold Solder"
+      severity: "major"
+      detection: ["aoi", "visual"]
+
+    - code: "VOID"
+      name: "보이드"
+      name_en: "Void"
+      severity: "minor"
+      detection: ["xray"]
+
+  component:
+    - code: "MISSING"
+      name: "부품 누락"
+      name_en: "Missing Component"
+      severity: "critical"
+      detection: ["aoi", "visual"]
+
+    - code: "WRONG"
+      name: "오삽"
+      name_en: "Wrong Component"
+      severity: "critical"
+      detection: ["aoi", "ict"]
+
+    - code: "POLARITY"
+      name: "극성 오류"
+      name_en: "Wrong Polarity"
+      severity: "critical"
+      detection: ["aoi", "ict"]
+
+    - code: "TOMBSTONE"
+      name: "툼스톤"
+      name_en: "Tombstone"
+      severity: "major"
+      detection: ["aoi", "visual"]
+
+    - code: "SHIFT"
+      name: "부품 틀어짐"
+      name_en: "Component Shift"
+      severity: "minor"
+      detection: ["aoi"]
+
+  mechanical:
+    - code: "CRACK"
+      name: "크랙"
+      name_en: "Crack"
+      severity: "critical"
+      detection: ["visual", "xray"]
+
+    - code: "SCRATCH"
+      name: "스크래치"
+      name_en: "Scratch"
+      severity: "minor"
+      detection: ["visual"]
+
+    - code: "DELAMINATION"
+      name: "박리"
+      name_en: "Delamination"
+      severity: "major"
+      detection: ["visual", "xray"]
+
+# 장비 벤더 정의
+equipment_vendors:
+  printer:
+    - name: "DEK"
+      models: ["Horizon 03iX", "NeoHorizon"]
+    - name: "YAMAHA"
+      models: ["YSP10"]
+  mounter:
+    - name: "YAMAHA"
+      models: ["YSM20R", "YSM40R"]
+    - name: "SIEMENS"
+      models: ["SIPLACE X4", "SIPLACE TX"]
+    - name: "FUJI"
+      models: ["NXT III", "AIMEX III"]
+  reflow:
+    - name: "HELLER"
+      models: ["MK7", "MK5"]
+    - name: "BTU"
+      models: ["Pyramax 150"]
+  aoi:
+    - name: "OMRON"
+      models: ["VT-S730", "VT-S1080"]
+    - name: "KOH YOUNG"
+      models: ["Zenith", "Meister"]
+  spi:
+    - name: "KOH YOUNG"
+      models: ["KY8030-3"]
+    - name: "CyberOptics"
+      models: ["SE500"]
+
+# KPI 목표값
+kpi_targets:
+  oee:
+    availability: 0.92
+    performance: 0.90
+    quality: 0.985
+    overall: 0.815
+
+  defect_rate:
+    target: 0.015  # 1.5%
+    warning: 0.025  # 2.5%
+    critical: 0.05  # 5%
+
+  delivery:
+    on_time_rate: 0.95
+    lead_time_days: 5
+
+  inventory:
+    turnover_ratio: 12  # 연 12회
+    coverage_days_a: 7
+    coverage_days_b: 14
+    coverage_days_c: 30
+
+# 시나리오 이벤트 설정
+scenarios:
+  normal:
+    defect_rate_mean: 0.015
+    defect_rate_std: 0.005
+    oee_mean: 0.85
+    oee_std: 0.05
+    downtime_pct: 0.05
+
+  quality_issue:
+    trigger_dates: ["2024-09-15", "2024-11-20"]
+    duration_days: 5
+    affected_lines: ["SMT-L03", "SMT-L04"]
+    defect_rate_multiplier: 3.0
+    primary_defect: "BRIDGE"
+    root_cause: "Solder paste viscosity issue"
+
+  equipment_issue:
+    trigger_dates: ["2024-08-20", "2024-10-10"]
+    duration_days: 3
+    affected_equipment: ["MOUNTER-L01-01", "REFLOW-L06"]
+    downtime_multiplier: 5.0
+    root_cause: "Nozzle clogging / Temperature sensor failure"
+
+  material_issue:
+    trigger_dates: ["2024-10-01"]
+    duration_days: 7
+    affected_vendor: "VENDOR-023"
+    affected_components: ["CAP-0402-10UF", "RES-0402-10K"]
+    defect_rate_multiplier: 4.0
+    root_cause: "Supplier quality issue - incoming lot"
+
+# 데이터 생성 볼륨 설정
+data_volumes:
+  master:
+    customers: 150
+    vendors: 200
+    products_per_family: 10
+    materials: 3000
+    equipment: 150
+    operators: 180
+
+  daily_transactions:
+    sales_orders: [30, 50]
+    purchase_orders: [20, 40]
+    work_orders: [80, 120]
+    production_results: [2000, 3000]
+    quality_inspections: [500, 800]
+    defect_records: [50, 150]
+    equipment_events: [500, 1000]
+    inventory_transactions: [1000, 2000]

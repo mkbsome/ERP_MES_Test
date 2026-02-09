@@ -1,0 +1,97 @@
+# 기준정보 시나리오
+# 다른 모든 모듈의 기반이 되는 마스터 데이터
+
+master_data:
+  # 고객 마스터
+  customers:
+    count: 50
+    template:
+      code_prefix: "CUST"
+      grades: ["A", "B", "C", "D"]
+      payment_terms: ["net_30", "net_45", "net_60", "net_90"]
+    distribution:
+      grade_A: 20%
+      grade_B: 50%
+      grade_C: 25%
+      grade_D: 5%
+
+  # 공급업체 마스터
+  vendors:
+    count: 30
+    template:
+      code_prefix: "VEND"
+      grades: ["A", "B", "C", "D"]
+      payment_terms: ["net_30", "net_45", "net_60", "net_90"]
+    distribution:
+      grade_A: 30%
+      grade_B: 50%
+      grade_C: 15%
+      grade_D: 5%
+
+  # 제품 마스터
+  products:
+    count: 100
+    template:
+      code_prefix: "PROD"
+      types: ["FG", "WIP", "RM", "PKG", "MRO"]
+      units: ["EA", "SET", "BOX", "KG", "M"]
+    categories:
+      FG: 30%
+      WIP: 25%
+      RM: 35%
+      PKG: 5%
+      MRO: 5%
+    price_range:
+      min: 1000
+      max: 100000
+
+  # 창고 마스터 (DB 스키마: raw, wip, finished, mro)
+  warehouses:
+    items:
+      - code: "WH001"
+        name: "원자재 창고"
+        type: "raw"
+      - code: "WH002"
+        name: "완제품 창고"
+        type: "finished"
+      - code: "WH003"
+        name: "재공품 창고"
+        type: "wip"
+      - code: "WH004"
+        name: "MRO 창고"
+        type: "mro"
+      - code: "WH005"
+        name: "외주 창고"
+        type: "raw"
+
+  # 생산라인 (DB 스키마: SMT, DIP, ASSY, TEST, PACK)
+  production_lines:
+    items:
+      - code: "LINE001"
+        name: "SMT-1라인"
+        type: "SMT"
+        capacity: 500
+      - code: "LINE002"
+        name: "SMT-2라인"
+        type: "SMT"
+        capacity: 500
+      - code: "LINE003"
+        name: "조립라인"
+        type: "ASSY"
+        capacity: 300
+      - code: "LINE004"
+        name: "검사라인"
+        type: "TEST"
+        capacity: 1000
+      - code: "LINE005"
+        name: "포장라인"
+        type: "PACK"
+        capacity: 800
+
+  # 설비
+  equipment:
+    count: 25
+    template:
+      code_prefix: "EQP"
+      types: ["MOUNTER", "REFLOW", "AOI", "SPI", "PRINTER", "LOADER", "CONVEYOR"]
+    per_line: 5

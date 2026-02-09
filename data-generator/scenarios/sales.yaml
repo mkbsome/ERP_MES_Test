@@ -1,0 +1,70 @@
+# 영업 모듈 시나리오
+# 수주 → 출하 → 매출 흐름
+
+sales_scenario:
+  period:
+    start: "2024-01-01"
+    end: "today"  # 현재 날짜까지
+
+  # 수주 생성 규칙
+  sales_orders:
+    monthly_count: 50  # 월 평균 수주 건수
+    variance: 20%      # 월별 편차
+
+    # 상태별 분포
+    status_distribution:
+      DRAFT: 5%        # 작성중
+      CONFIRMED: 10%   # 확정
+      IN_PRODUCTION: 15%  # 생산중
+      SHIPPED: 60%     # 출하완료
+      CLOSED: 10%      # 마감
+
+    # 수주 품목
+    items_per_order:
+      min: 1
+      max: 5
+    quantity_range:
+      min: 100
+      max: 2000
+
+    # 납기
+    delivery_days:
+      min: 7
+      max: 45
+
+    # 고객 등급별 수주 비중
+    customer_grade_weight:
+      A: 50%  # A등급 고객 수주 50%
+      B: 35%
+      C: 15%
+
+  # 출하 시나리오
+  shipments:
+    # 수주 대비 출하율
+    fulfillment_rate: 95%
+
+    # 출하 → 수주 연결
+    link_to_sales_order: true
+
+    # 부분 출하 비율
+    partial_shipment_rate: 10%
+
+  # 매출 시나리오
+  revenues:
+    # 출하 후 매출 인식 지연 (일)
+    recognition_delay: 0
+
+    # 매출채권 회수 기간 분포
+    collection_days:
+      avg: 45
+      min: 30
+      max: 90
+
+  # 반품/클레임
+  returns:
+    rate: 2%  # 반품율
+    reasons:
+      - "품질 불량"
+      - "오배송"
+      - "고객 변심"
+      - "파손"

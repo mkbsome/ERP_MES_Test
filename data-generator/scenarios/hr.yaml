@@ -1,0 +1,181 @@
+# HR 모듈 시나리오
+# 부서/직급/직원 → 근태 → 급여 흐름
+
+hr_scenario:
+  period:
+    start: "2024-01-01"
+    end: "today"
+
+  # 조직 구조
+  organization:
+    departments:
+      - code: "DEPT001"
+        name: "경영지원본부"
+        parent: null
+        children:
+          - code: "DEPT011"
+            name: "인사팀"
+          - code: "DEPT012"
+            name: "재무팀"
+          - code: "DEPT013"
+            name: "총무팀"
+
+      - code: "DEPT002"
+        name: "영업본부"
+        parent: null
+        children:
+          - code: "DEPT021"
+            name: "국내영업팀"
+          - code: "DEPT022"
+            name: "해외영업팀"
+
+      - code: "DEPT003"
+        name: "생산본부"
+        parent: null
+        children:
+          - code: "DEPT031"
+            name: "생산1팀"
+          - code: "DEPT032"
+            name: "생산2팀"
+          - code: "DEPT033"
+            name: "품질관리팀"
+
+      - code: "DEPT004"
+        name: "연구개발본부"
+        parent: null
+        children:
+          - code: "DEPT041"
+            name: "제품개발팀"
+          - code: "DEPT042"
+            name: "기술연구팀"
+
+    # 직급 체계
+    positions:
+      - code: "POS001"
+        name: "대표이사"
+        level: 1
+        salary_min: 200000000
+        salary_max: 500000000
+        count: 1
+
+      - code: "POS002"
+        name: "임원"
+        level: 2
+        salary_min: 120000000
+        salary_max: 200000000
+        count: 3
+
+      - code: "POS003"
+        name: "부장"
+        level: 3
+        salary_min: 70000000
+        salary_max: 100000000
+        count: 10
+
+      - code: "POS004"
+        name: "차장"
+        level: 4
+        salary_min: 55000000
+        salary_max: 75000000
+        count: 15
+
+      - code: "POS005"
+        name: "과장"
+        level: 5
+        salary_min: 45000000
+        salary_max: 60000000
+        count: 25
+
+      - code: "POS006"
+        name: "대리"
+        level: 6
+        salary_min: 38000000
+        salary_max: 50000000
+        count: 35
+
+      - code: "POS007"
+        name: "사원"
+        level: 7
+        salary_min: 32000000
+        salary_max: 42000000
+        count: 50
+
+      - code: "POS008"
+        name: "인턴"
+        level: 8
+        salary_min: 24000000
+        salary_max: 30000000
+        count: 10
+
+  # 직원
+  employees:
+    total_count: 150
+
+    # 고용 형태 분포
+    employment_type:
+      정규직: 85%
+      계약직: 10%
+      파트타임: 3%
+      인턴: 2%
+
+    # 상태 분포
+    status:
+      재직: 95%
+      휴직: 4%
+      퇴사: 1%
+
+    # 근속년수 분포
+    tenure_years:
+      "0-1년": 20%
+      "1-3년": 30%
+      "3-5년": 25%
+      "5-10년": 15%
+      "10년+": 10%
+
+  # 근태
+  attendance:
+    # 근무 시간
+    work_hours:
+      start: "09:00"
+      end: "18:00"
+      break: 60  # 분
+
+    # 출근율
+    attendance_rate: 96%
+
+    # 지각율
+    late_rate: 3%
+
+    # 연차 사용
+    annual_leave:
+      days_per_year: 15
+      usage_rate: 80%
+
+    # 기타 휴가
+    other_leaves:
+      병가: 2%
+      경조사: 1%
+      출산휴가: 0.5%
+      육아휴직: 1%
+
+  # 급여
+  payroll:
+    # 급여 구성
+    components:
+      기본급: 70%
+      식대: 5%
+      교통비: 3%
+      직책수당: 5%
+      시간외수당: 10%
+      상여금: 7%
+
+    # 공제 항목
+    deductions:
+      소득세: "누진세율"
+      국민연금: 4.5%
+      건강보험: 3.545%
+      고용보험: 0.9%
+      장기요양: 12.81%  # 건강보험의 %
+
+    # 지급일
+    pay_day: 25  # 매월 25일

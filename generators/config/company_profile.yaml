@@ -1,0 +1,271 @@
+# Company Profile Configuration
+# GreenBoard Electronics - PCB/SMT Manufacturing Company
+
+company:
+  name: "(주)그린보드 일렉트로닉스"
+  name_en: "GreenBoard Electronics"
+  industry: "전자부품/PCB 제조"
+  employees: 350
+  annual_revenue: 180000000000  # 1,800억원
+
+# Factory Configuration
+factories:
+  - factory_id: "FACTORY-01"
+    name: "제1공장"
+    location: "경기도 화성시"
+    type: "SMT 전문"
+    lines:
+      # SMT Lines (10개)
+      - line_id: "SMT-L01"
+        name: "SMT 1호기"
+        type: "SMT"
+        capacity_per_hour: 3600
+        products: ["SMARTPHONE-MB", "POWER-BOARD"]
+        equipment:
+          - equipment_id: "SMT-L01-LOADER-01"
+            type: "LOADER"
+            manufacturer: "SAMSUNG"
+            mtbf_hours: 1200
+          - equipment_id: "SMT-L01-PRINTER-01"
+            type: "PRINTER"
+            manufacturer: "DEK"
+            mtbf_hours: 800
+          - equipment_id: "SMT-L01-SPI-01"
+            type: "SPI"
+            manufacturer: "KOH_YOUNG"
+            mtbf_hours: 2000
+          - equipment_id: "SMT-L01-MOUNTER-01"
+            type: "MOUNTER"
+            manufacturer: "SAMSUNG"
+            mtbf_hours: 600
+          - equipment_id: "SMT-L01-MOUNTER-02"
+            type: "MOUNTER"
+            manufacturer: "SAMSUNG"
+            mtbf_hours: 600
+          - equipment_id: "SMT-L01-REFLOW-01"
+            type: "REFLOW"
+            manufacturer: "BTU"
+            mtbf_hours: 1000
+          - equipment_id: "SMT-L01-AOI-01"
+            type: "AOI"
+            manufacturer: "KOH_YOUNG"
+            mtbf_hours: 1500
+          - equipment_id: "SMT-L01-UNLOADER-01"
+            type: "UNLOADER"
+            manufacturer: "SAMSUNG"
+            mtbf_hours: 1200
+
+      - line_id: "SMT-L02"
+        name: "SMT 2호기"
+        type: "SMT"
+        capacity_per_hour: 3200
+        products: ["LED-DRIVER", "IOT-MODULE"]
+        equipment:
+          - equipment_id: "SMT-L02-LOADER-01"
+            type: "LOADER"
+            manufacturer: "SAMSUNG"
+            mtbf_hours: 1200
+          - equipment_id: "SMT-L02-PRINTER-01"
+            type: "PRINTER"
+            manufacturer: "DEK"
+            mtbf_hours: 800
+          - equipment_id: "SMT-L02-SPI-01"
+            type: "SPI"
+            manufacturer: "KOH_YOUNG"
+            mtbf_hours: 2000
+          - equipment_id: "SMT-L02-MOUNTER-01"
+            type: "MOUNTER"
+            manufacturer: "FUJI"
+            mtbf_hours: 650
+          - equipment_id: "SMT-L02-MOUNTER-02"
+            type: "MOUNTER"
+            manufacturer: "FUJI"
+            mtbf_hours: 650
+          - equipment_id: "SMT-L02-REFLOW-01"
+            type: "REFLOW"
+            manufacturer: "HELLER"
+            mtbf_hours: 950
+          - equipment_id: "SMT-L02-AOI-01"
+            type: "AOI"
+            manufacturer: "KOH_YOUNG"
+            mtbf_hours: 1500
+          - equipment_id: "SMT-L02-UNLOADER-01"
+            type: "UNLOADER"
+            manufacturer: "SAMSUNG"
+            mtbf_hours: 1200
+
+      - line_id: "SMT-L03"
+        name: "SMT 3호기"
+        type: "SMT"
+        capacity_per_hour: 4000
+        products: ["AUTOMOTIVE-ECU"]
+
+  - factory_id: "FACTORY-02"
+    name: "제2공장"
+    location: "경기도 평택시"
+    type: "THT/조립 전문"
+    lines:
+      - line_id: "THT-L01"
+        name: "THT 1호기"
+        type: "THT"
+        capacity_per_hour: 1200
+        products: ["POWER-BOARD", "INDUSTRIAL-CTRL"]
+
+      - line_id: "ASM-L01"
+        name: "조립 1호기"
+        type: "ASSEMBLY"
+        capacity_per_hour: 800
+        products: ["SMARTPHONE-MB", "IOT-MODULE"]
+
+# Products
+products:
+  - product_id: "SMARTPHONE-MB"
+    name: "스마트폰 메인보드"
+    category: "Consumer"
+    bom_count: 450
+    cycle_time_seconds: 15
+    base_defect_rate: 0.015
+    price: 45000
+
+  - product_id: "POWER-BOARD"
+    name: "전원보드"
+    category: "Industrial"
+    bom_count: 120
+    cycle_time_seconds: 25
+    base_defect_rate: 0.012
+    price: 28000
+
+  - product_id: "LED-DRIVER"
+    name: "LED 드라이버"
+    category: "Consumer"
+    bom_count: 80
+    cycle_time_seconds: 18
+    base_defect_rate: 0.010
+    price: 15000
+
+  - product_id: "AUTOMOTIVE-ECU"
+    name: "자동차 ECU"
+    category: "Automotive"
+    bom_count: 280
+    cycle_time_seconds: 30
+    base_defect_rate: 0.008
+    price: 85000
+
+  - product_id: "IOT-MODULE"
+    name: "IoT 모듈"
+    category: "Consumer"
+    bom_count: 65
+    cycle_time_seconds: 12
+    base_defect_rate: 0.018
+    price: 12000
+
+# Defect Types (SMT/PCB specific)
+defect_types:
+  - code: "BRIDGE"
+    name: "솔더 브릿지"
+    category: "SOLDER"
+    causes: ["STENCIL_WEAR", "SQUEEGEE_PRESSURE", "PASTE_EXCESS"]
+    base_rate: 0.25
+
+  - code: "MISSING"
+    name: "부품 누락"
+    category: "COMPONENT"
+    causes: ["FEEDER_ERROR", "VACUUM_NOZZLE", "VISION_ERROR"]
+    base_rate: 0.15
+
+  - code: "TOMBSTONE"
+    name: "부품 들림"
+    category: "PLACEMENT"
+    causes: ["THERMAL_IMBALANCE", "PAD_SIZE_MISMATCH", "PASTE_IMBALANCE"]
+    base_rate: 0.12
+
+  - code: "COLD_SOLDER"
+    name: "냉납"
+    category: "SOLDER"
+    causes: ["REFLOW_TEMP_LOW", "CONVEYOR_SPEED_FAST", "PASTE_OXIDATION"]
+    base_rate: 0.10
+
+  - code: "SOLDER_BALL"
+    name: "솔더볼"
+    category: "SOLDER"
+    causes: ["FLUX_RESIDUE", "REFLOW_PROFILE", "MOISTURE"]
+    base_rate: 0.08
+
+  - code: "INSUFFICIENT"
+    name: "미납"
+    category: "SOLDER"
+    causes: ["PASTE_INSUFFICIENT", "STENCIL_BLOCKAGE", "SQUEEGEE_WORN"]
+    base_rate: 0.10
+
+  - code: "CRACK"
+    name: "크랙"
+    category: "SOLDER"
+    causes: ["THERMAL_SHOCK", "MECHANICAL_STRESS", "BOARD_WARP"]
+    base_rate: 0.05
+
+  - code: "POLARITY"
+    name: "극성 오류"
+    category: "COMPONENT"
+    causes: ["FEEDER_SETUP_ERROR", "COMPONENT_ROTATION", "TAPE_ERROR"]
+    base_rate: 0.05
+
+  - code: "SHIFTED"
+    name: "부품 틀어짐"
+    category: "PLACEMENT"
+    causes: ["NOZZLE_CALIBRATION", "PCB_WARP", "PASTE_SLUMP"]
+    base_rate: 0.08
+
+  - code: "LIFTED_LEAD"
+    name: "리드 들림"
+    category: "SOLDER"
+    causes: ["COPLANARITY", "REFLOW_PROFILE", "PAD_DESIGN"]
+    base_rate: 0.02
+
+# Vendors
+vendors:
+  - vendor_id: "VENDOR-001"
+    name: "삼성전기"
+    category: "IC/Passive"
+    quality_grade: "A"
+    lead_time_days: 7
+
+  - vendor_id: "VENDOR-002"
+    name: "LG이노텍"
+    category: "PCB"
+    quality_grade: "A"
+    lead_time_days: 5
+
+  - vendor_id: "VENDOR-003"
+    name: "대한부품"
+    category: "Passive"
+    quality_grade: "B"
+    lead_time_days: 3
+
+  - vendor_id: "VENDOR-004"
+    name: "중국전자"
+    category: "IC"
+    quality_grade: "C"
+    lead_time_days: 14
+
+# Shifts
+shifts:
+  - shift_id: "DAY"
+    name: "주간"
+    start_time: "08:00"
+    end_time: "16:00"
+    workers_per_line: 3
+    quality_factor: 1.0
+
+  - shift_id: "EVENING"
+    name: "오후"
+    start_time: "16:00"
+    end_time: "00:00"
+    workers_per_line: 3
+    quality_factor: 1.1
+
+  - shift_id: "NIGHT"
+    name: "야간"
+    start_time: "00:00"
+    end_time: "08:00"
+    workers_per_line: 2
+    quality_factor: 1.3

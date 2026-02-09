@@ -1,0 +1,660 @@
+# 실시간 시나리오 정의
+# 각 시나리오는 버튼 클릭 시 즉시 DB에 반영됨
+
+realtime_scenarios:
+  # ============================================
+  # 품질 관련 시나리오
+  # ============================================
+  quality:
+    defect_spike:
+      id: "QS001"
+      name: "불량률 급증"
+      description: "특정 라인의 불량률이 급격히 증가하는 상황"
+      category: "quality"
+      icon: "alert-triangle"
+      color: "red"
+
+      parameters:
+        - name: "line_code"
+          label: "대상 라인"
+          type: "select"
+          source: "mes_production_line"
+          required: true
+        - name: "defect_rate"
+          label: "불량률 (%)"
+          type: "number"
+          min: 5
+          max: 50
+          default: 15
+        - name: "duration_type"
+          label: "적용 방식"
+          type: "select"
+          options:
+            - value: "instant"
+              label: "즉시 (1회성)"
+            - value: "hours"
+              label: "시간 단위"
+            - value: "days"
+              label: "일 단위"
+          default: "instant"
+        - name: "duration_value"
+          label: "적용 기간"
+          type: "number"
+          min: 1
+          max: 30
+          default: 1
+          condition: "duration_type != 'instant'"
+        - name: "defect_types"
+          label: "불량 유형"
+          type: "multiselect"
+          options:
+            - value: "solder"
+              label: "납땜불량"
+            - value: "missing"
+              label: "부품누락"
+            - value: "polarity"
+              label: "극성반전"
+            - value: "damage"
+              label: "부품파손"
+            - value: "position"
+              label: "위치불량"
+          default: ["solder", "missing"]
+
+      effects:
+        - table: "mes_production_result"
+          action: "insert"
+          description: "불량 생산실적 데이터 생성"
+        - table: "mes_defect_record"
+          action: "insert"
+          description: "불량 상세 기록 생성"
+
+    quality_hold:
+      id: "QS002"
+      name: "품질 홀드"
+      description: "특정 제품/로트의 품질 보류 처리"
+      category: "quality"
+      icon: "pause-circle"
+      color: "yellow"
+
+      parameters:
+        - name: "target_type"
+          label: "대상 유형"
+          type: "select"
+          options:
+            - value: "product"
+              label: "제품"
+            - value: "lot"
+              label: "LOT"
+            - value: "line"
+              label: "라인"
+          default: "lot"
+        - name: "target_code"
+          label: "대상 코드"
+          type: "text"
+          required: true
+        - name: "hold_reason"
+          label: "보류 사유"
+          type: "select"
+          options:
+            - value: "inspection_fail"
+              label: "검사 불합격"
+            - value: "customer_complaint"
+              label: "고객 클레임"
+            - value: "spec_change"
+              label: "스펙 변경"
+            - value: "material_issue"
+              label: "자재 이슈"
+          required: true
+
+      effects:
+        - table: "mes_quality_hold"
+          action: "insert"
+        - table: "erp_inventory"
+          action: "update"
+          field: "status"
+          value: "hold"
+
+  # ============================================
+  # 설비 관련 시나리오
+  # ============================================
+  equipment:
+    breakdown:
+      id: "EQ001"
+      name: "설비 고장"
+      description: "특정 설비의 돌발 고장 발생"
+      category: "equipment"
+      icon: "alert-octagon"
+      color: "red"
+
+      parameters:
+        - name: "equipment_code"
+          label: "대상 설비"
+          type: "select"
+          source: "mes_equipment"
+          required: true
+        - name: "failure_type"
+          label: "고장 유형"
+          type: "select"
+          options:
+            - value: "mechanical"
+              label: "기계적 고장"
+            - value: "electrical"
+              label: "전기적 고장"
+            - value: "software"
+              label: "소프트웨어 오류"
+            - value: "sensor"
+              label: "센서 이상"
+          required: true
+        - name: "severity"
+          label: "심각도"
+          type: "select"
+          options:
+            - value: "critical"
+              label: "긴급 (라인 정지)"
+            - value: "major"
+              label: "주요 (성능 저하)"
+            - value: "minor"
+              label: "경미 (모니터링)"
+          default: "major"
+        - name: "estimated_repair_hours"
+          label: "예상 수리시간 (시간)"
+          type: "number"
+          min: 1
+          max: 72
+          default: 4
+
+      effects:
+        - table: "mes_equipment"
+          action: "update"
+          field: "status"
+          value: "breakdown"
+        - table: "mes_downtime"
+          action: "insert"
+        - table: "mes_production_order"
+          action: "update"
+          condition: "해당 설비 사용 작업"
+          field: "status"
+          value: "paused"
+
+    oee_degradation:
+      id: "EQ002"
+      name: "OEE 저하"
+      description: "설비 효율이 점진적으로 저하되는 상황"
+      category: "equipment"
+      icon: "trending-down"
+      color: "orange"
+
+      parameters:
+        - name: "equipment_code"
+          label: "대상 설비"
+          type: "select"
+          source: "mes_equipment"
+          required: true
+        - name: "degradation_type"
+          label: "저하 유형"
+          type: "multiselect"
+          options:
+            - value: "availability"
+              label: "가동률 저하"
+            - value: "performance"
+              label: "성능 저하"
+            - value: "quality"
+              label: "품질률 저하"
+          default: ["performance"]
+        - name: "degradation_percent"
+          label: "저하율 (%)"
+          type: "number"
+          min: 5
+          max: 40
+          default: 15
+        - name: "duration_days"
+          label: "적용 기간 (일)"
+          type: "number"
+          min: 1
+          max: 30
+          default: 7
+
+      effects:
+        - table: "mes_equipment_status"
+          action: "insert"
+          description: "시간별 OEE 데이터 생성"
+
+    preventive_maintenance:
+      id: "EQ003"
+      name: "예방 정비"
+      description: "계획된 예방 정비 실행"
+      category: "equipment"
+      icon: "tool"
+      color: "blue"
+
+      parameters:
+        - name: "equipment_code"
+          label: "대상 설비"
+          type: "select"
+          source: "mes_equipment"
+          required: true
+        - name: "maintenance_type"
+          label: "정비 유형"
+          type: "select"
+          options:
+            - value: "daily"
+              label: "일상 점검"
+            - value: "weekly"
+              label: "주간 정비"
+            - value: "monthly"
+              label: "월간 정비"
+            - value: "overhaul"
+              label: "오버홀"
+          default: "weekly"
+        - name: "duration_hours"
+          label: "정비 시간 (시간)"
+          type: "number"
+          min: 1
+          max: 24
+          default: 2
+
+      effects:
+        - table: "mes_equipment"
+          action: "update"
+          field: "status"
+          value: "maintenance"
+        - table: "mes_maintenance_history"
+          action: "insert"
+
+  # ============================================
+  # 생산 관련 시나리오
+  # ============================================
+  production:
+    urgent_order:
+      id: "PR001"
+      name: "긴급 주문"
+      description: "긴급 수주 발생 및 제조오더 생성"
+      category: "production"
+      icon: "zap"
+      color: "red"
+
+      parameters:
+        - name: "customer_code"
+          label: "고객"
+          type: "select"
+          source: "erp_customer_master"
+          required: true
+        - name: "product_code"
+          label: "제품"
+          type: "select"
+          source: "erp_product_master"
+          required: true
+        - name: "quantity"
+          label: "수량"
+          type: "number"
+          min: 100
+          max: 10000
+          default: 500
+        - name: "due_days"
+          label: "납기 (일)"
+          type: "number"
+          min: 1
+          max: 14
+          default: 3
+        - name: "priority"
+          label: "우선순위"
+          type: "select"
+          options:
+            - value: "highest"
+              label: "최우선"
+            - value: "high"
+              label: "높음"
+            - value: "normal"
+              label: "보통"
+          default: "highest"
+
+      effects:
+        - table: "erp_sales_order"
+          action: "insert"
+        - table: "erp_sales_order_item"
+          action: "insert"
+        - table: "erp_work_order"
+          action: "insert"
+        - table: "mes_production_order"
+          action: "insert"
+
+    production_delay:
+      id: "PR002"
+      name: "생산 지연"
+      description: "특정 제조오더의 생산 지연 발생"
+      category: "production"
+      icon: "clock"
+      color: "yellow"
+
+      parameters:
+        - name: "work_order_no"
+          label: "제조오더"
+          type: "select"
+          source: "erp_work_order"
+          filter: "status IN ('in_progress', 'released')"
+          required: true
+        - name: "delay_reason"
+          label: "지연 사유"
+          type: "select"
+          options:
+            - value: "material_shortage"
+              label: "자재 부족"
+            - value: "equipment_issue"
+              label: "설비 문제"
+            - value: "quality_issue"
+              label: "품질 이슈"
+            - value: "manpower_shortage"
+              label: "인력 부족"
+            - value: "priority_change"
+              label: "우선순위 변경"
+          required: true
+        - name: "delay_days"
+          label: "지연 일수"
+          type: "number"
+          min: 1
+          max: 14
+          default: 3
+
+      effects:
+        - table: "erp_work_order"
+          action: "update"
+          field: "planned_end"
+          operation: "add_days"
+        - table: "erp_sales_order"
+          action: "update"
+          field: "delivery_date"
+          operation: "add_days"
+
+    shift_change:
+      id: "PR003"
+      name: "교대 근무 변경"
+      description: "생산라인 교대 근무 패턴 변경"
+      category: "production"
+      icon: "users"
+      color: "blue"
+
+      parameters:
+        - name: "line_code"
+          label: "대상 라인"
+          type: "select"
+          source: "mes_production_line"
+          required: true
+        - name: "shift_pattern"
+          label: "교대 패턴"
+          type: "select"
+          options:
+            - value: "1shift"
+              label: "1교대 (주간)"
+            - value: "2shift"
+              label: "2교대"
+            - value: "3shift"
+              label: "3교대 (24시간)"
+          required: true
+        - name: "effective_date"
+          label: "적용일"
+          type: "date"
+          default: "today"
+
+      effects:
+        - table: "mes_production_line"
+          action: "update"
+          field: "shift_pattern"
+
+  # ============================================
+  # 자재/재고 관련 시나리오
+  # ============================================
+  material:
+    material_shortage:
+      id: "MT001"
+      name: "자재 부족"
+      description: "특정 자재의 재고 부족 상황 발생"
+      category: "material"
+      icon: "package-x"
+      color: "red"
+
+      parameters:
+        - name: "item_code"
+          label: "자재"
+          type: "select"
+          source: "erp_product_master"
+          filter: "product_type = 'RM'"
+          required: true
+        - name: "shortage_percent"
+          label: "부족률 (%)"
+          type: "number"
+          min: 50
+          max: 100
+          default: 80
+          description: "현재 재고 대비 감소율"
+        - name: "affected_orders"
+          label: "영향 범위"
+          type: "select"
+          options:
+            - value: "current"
+              label: "진행중 오더만"
+            - value: "planned"
+              label: "계획 오더 포함"
+            - value: "all"
+              label: "전체"
+          default: "current"
+
+      effects:
+        - table: "erp_inventory"
+          action: "update"
+          field: "quantity"
+          operation: "reduce"
+        - table: "mes_material_request"
+          action: "insert"
+          description: "긴급 자재 요청 생성"
+
+    incoming_inspection_fail:
+      id: "MT002"
+      name: "입고 검사 불합격"
+      description: "입고 자재의 품질 검사 불합격"
+      category: "material"
+      icon: "x-circle"
+      color: "red"
+
+      parameters:
+        - name: "receipt_no"
+          label: "입고번호"
+          type: "select"
+          source: "erp_goods_receipt"
+          filter: "receipt_date >= CURRENT_DATE - 7"
+          required: true
+        - name: "reject_rate"
+          label: "불합격률 (%)"
+          type: "number"
+          min: 10
+          max: 100
+          default: 30
+        - name: "reject_reason"
+          label: "불합격 사유"
+          type: "select"
+          options:
+            - value: "spec_fail"
+              label: "규격 미달"
+            - value: "damage"
+              label: "파손/변형"
+            - value: "contamination"
+              label: "오염"
+            - value: "wrong_item"
+              label: "오배송"
+          required: true
+
+      effects:
+        - table: "erp_goods_receipt_item"
+          action: "update"
+          field: "inspection_result"
+          value: "FAIL"
+        - table: "erp_inventory"
+          action: "update"
+          field: "status"
+          value: "rejected"
+
+  # ============================================
+  # 영업/구매 관련 시나리오
+  # ============================================
+  business:
+    order_cancellation:
+      id: "BS001"
+      name: "주문 취소"
+      description: "고객 주문 취소 발생"
+      category: "business"
+      icon: "x-square"
+      color: "red"
+
+      parameters:
+        - name: "order_no"
+          label: "주문번호"
+          type: "select"
+          source: "erp_sales_order"
+          filter: "status NOT IN ('shipped', 'closed', 'cancelled')"
+          required: true
+        - name: "cancel_reason"
+          label: "취소 사유"
+          type: "select"
+          options:
+            - value: "customer_request"
+              label: "고객 요청"
+            - value: "delivery_delay"
+              label: "납기 지연"
+            - value: "price_issue"
+              label: "가격 문제"
+            - value: "spec_change"
+              label: "사양 변경"
+          required: true
+        - name: "cancel_production"
+          label: "생산 취소"
+          type: "boolean"
+          default: true
+          description: "관련 제조오더도 함께 취소"
+
+      effects:
+        - table: "erp_sales_order"
+          action: "update"
+          field: "status"
+          value: "cancelled"
+        - table: "erp_work_order"
+          action: "update"
+          condition: "cancel_production = true"
+          field: "status"
+          value: "cancelled"
+
+    supplier_delay:
+      id: "BS002"
+      name: "공급업체 납기 지연"
+      description: "발주 자재의 납품 지연"
+      category: "business"
+      icon: "truck"
+      color: "yellow"
+
+      parameters:
+        - name: "po_no"
+          label: "발주번호"
+          type: "select"
+          source: "erp_purchase_order"
+          filter: "status IN ('sent', 'confirmed')"
+          required: true
+        - name: "delay_days"
+          label: "지연 일수"
+          type: "number"
+          min: 1
+          max: 30
+          default: 7
+        - name: "notify_production"
+          label: "생산팀 통보"
+          type: "boolean"
+          default: true
+
+      effects:
+        - table: "erp_purchase_order"
+          action: "update"
+          field: "expected_date"
+          operation: "add_days"
+
+  # ============================================
+  # HR 관련 시나리오
+  # ============================================
+  hr:
+    mass_absence:
+      id: "HR001"
+      name: "대량 결근"
+      description: "특정 부서/라인의 대량 결근 발생"
+      category: "hr"
+      icon: "user-x"
+      color: "red"
+
+      parameters:
+        - name: "department_code"
+          label: "부서"
+          type: "select"
+          source: "erp_department"
+          required: true
+        - name: "absence_rate"
+          label: "결근율 (%)"
+          type: "number"
+          min: 10
+          max: 50
+          default: 20
+        - name: "absence_reason"
+          label: "결근 사유"
+          type: "select"
+          options:
+            - value: "sick"
+              label: "병가"
+            - value: "personal"
+              label: "개인 사유"
+            - value: "weather"
+              label: "기상 악화"
+            - value: "transport"
+              label: "교통 문제"
+          default: "sick"
+        - name: "duration_days"
+          label: "기간 (일)"
+          type: "number"
+          min: 1
+          max: 7
+          default: 1
+
+      effects:
+        - table: "erp_attendance"
+          action: "update"
+          field: "status"
+          value: "absent"
+
+    overtime_request:
+      id: "HR002"
+      name: "특근 요청"
+      description: "긴급 생산을 위한 특근 실시"
+      category: "hr"
+      icon: "clock"
+      color: "blue"
+
+      parameters:
+        - name: "department_code"
+          label: "부서"
+          type: "select"
+          source: "erp_department"
+          required: true
+        - name: "overtime_hours"
+          label: "특근 시간"
+          type: "number"
+          min: 1
+          max: 8
+          default: 4
+        - name: "overtime_date"
+          label: "특근일"
+          type: "date"
+          default: "today"
+        - name: "participation_rate"
+          label: "참여율 (%)"
+          type: "number"
+          min: 30
+          max: 100
+          default: 70
+
+      effects:
+        - table: "erp_attendance"
+          action: "update"
+          field: "overtime_hours"
