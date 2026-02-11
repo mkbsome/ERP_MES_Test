@@ -31,12 +31,12 @@ export const mesMenuConfig: MenuGroup[] = [
       { id: 'common-code', name: '공통코드관리', path: '/master/common-code' },
       { id: 'department', name: '부서관리', path: '/master/department' },
       { id: 'customer', name: '고객사관리', path: '/master/customer' },
-      { id: 'item', name: '품목정보관리', path: '/master/item' },
-      { id: 'item-process', name: '품목별공정관리', path: '/master/item-process' },
+      { id: 'product', name: '품목정보관리', path: '/master/product' },
+      { id: 'bom', name: 'BOM관리', path: '/master/bom' },
+      { id: 'line', name: '라인관리', path: '/master/line' },
       { id: 'equipment', name: '설비정보관리', path: '/master/equipment' },
       { id: 'worker', name: '작업자관리', path: '/master/worker' },
       { id: 'inspection-item', name: '검사항목관리', path: '/master/inspection-item' },
-      { id: 'defect-type', name: '불량유형관리', path: '/master/defect-type' },
     ],
   },
   {
@@ -44,10 +44,10 @@ export const mesMenuConfig: MenuGroup[] = [
     name: '생산계획',
     icon: 'CalendarDays',
     items: [
-      { id: 'annual-plan', name: '연간생산계획', path: '/planning/annual' },
+      { id: 'yearly-plan', name: '연간생산계획', path: '/planning/yearly' },
       { id: 'monthly-plan', name: '월간생산계획', path: '/planning/monthly' },
       { id: 'weekly-plan', name: '주간생산계획', path: '/planning/weekly' },
-      { id: 'daily-plan', name: '생산지시관리', path: '/planning/daily' },
+      { id: 'daily-plan', name: '일간생산계획', path: '/planning/daily' },
       { id: 'work-order', name: '작업지시관리', path: '/planning/work-order' },
       { id: 'work-order-confirm', name: '작업지시확정', path: '/planning/work-order-confirm' },
       { id: 'work-order-status', name: '작업지시현황', path: '/planning/work-order-status' },
@@ -58,11 +58,11 @@ export const mesMenuConfig: MenuGroup[] = [
     name: '생산실행',
     icon: 'Play',
     items: [
-      { id: 'work-list', name: '작업지시목록', path: '/execution/work-list' },
       { id: 'result-input', name: '실적등록', path: '/execution/result-input' },
       { id: 'self-inspection', name: '자주검사', path: '/execution/self-inspection' },
-      { id: 'downtime-input', name: '비가동등록', path: '/execution/downtime-input' },
+      { id: 'downtime', name: '비가동등록', path: '/execution/downtime' },
       { id: 'material-info', name: '원자재정보', path: '/execution/material-info' },
+      { id: 'lot-tracking', name: 'LOT추적', path: '/execution/lot-tracking' },
     ],
   },
   {
@@ -70,13 +70,11 @@ export const mesMenuConfig: MenuGroup[] = [
     name: '품질관리',
     icon: 'Shield',
     items: [
-      { id: 'first-mid-final', name: '초중종검사현황', path: '/quality/first-mid-final' },
-      { id: 'self-inspection-status', name: '자주검사현황', path: '/quality/self-inspection-status' },
-      { id: 'defect-by-equipment', name: '설비별불량현황', path: '/quality/defect-by-equipment' },
-      { id: 'defect-by-period', name: '기간별불량현황', path: '/quality/defect-by-period' },
-      { id: 'defect-by-work', name: '작업별불량현황', path: '/quality/defect-by-work' },
+      { id: 'initial-inspection', name: '초중종검사', path: '/quality/initial-inspection' },
+      { id: 'process-inspection', name: '공정검사', path: '/quality/process-inspection' },
+      { id: 'defect-status', name: '불량현황', path: '/quality/defect-status' },
       { id: 'spc', name: 'SPC관리', path: '/quality/spc' },
-      { id: 'nonconformity', name: '부적합품관리', path: '/quality/nonconformity' },
+      { id: 'claim', name: '클레임관리', path: '/quality/claim' },
     ],
   },
   {
@@ -84,12 +82,11 @@ export const mesMenuConfig: MenuGroup[] = [
     name: '설비관리',
     icon: 'Cpu',
     items: [
-      { id: 'equipment-status', name: '설비작업현황', path: '/equipment/status' },
-      { id: 'equipment-oee', name: '설비가동률조회', path: '/equipment/oee' },
-      { id: 'equipment-failure', name: '설비고장내역관리', path: '/equipment/failure' },
-      { id: 'maintenance-order', name: '설비보전지시', path: '/equipment/maintenance-order' },
-      { id: 'maintenance-history', name: '설비보전이력', path: '/equipment/maintenance-history' },
-      { id: 'downtime-by-equipment', name: '설비별비가동현황', path: '/equipment/downtime' },
+      { id: 'utilization', name: '설비가동률', path: '/equipment-mgmt/utilization' },
+      { id: 'breakdown', name: '고장관리', path: '/equipment-mgmt/breakdown' },
+      { id: 'maintenance-order', name: '보전지시', path: '/equipment-mgmt/maintenance-order' },
+      { id: 'maintenance-history', name: '보전이력', path: '/equipment-mgmt/maintenance-history' },
+      { id: 'pm-schedule', name: '예방보전계획', path: '/equipment-mgmt/pm-schedule' },
     ],
   },
   {
@@ -97,12 +94,12 @@ export const mesMenuConfig: MenuGroup[] = [
     name: '현황/모니터링',
     icon: 'Monitor',
     items: [
-      { id: 'work-result-status', name: '작업실적현황', path: '/monitoring/work-result' },
-      { id: 'work-result-detail', name: '작업실적상세현황', path: '/monitoring/work-result-detail' },
-      { id: 'equipment-work-history', name: '설비별작업이력', path: '/monitoring/equipment-history' },
-      { id: 'worker-work-history', name: '작업자별작업이력', path: '/monitoring/worker-history' },
-      { id: 'overall-status', name: '종합가동현황', path: '/monitoring/overall' },
-      { id: 'group-status', name: '그룹별가동현황', path: '/monitoring/group' },
+      { id: 'work-result', name: '작업실적현황', path: '/monitoring/work-result' },
+      { id: 'equipment-history', name: '설비별작업이력', path: '/monitoring/equipment-history' },
+      { id: 'worker-history', name: '작업자별이력', path: '/monitoring/worker-history' },
+      { id: 'line-status', name: '라인현황', path: '/monitoring/line-status' },
+      { id: 'realtime', name: '실시간모니터링', path: '/monitoring/realtime' },
+      { id: 'oee', name: 'OEE분석', path: '/monitoring/oee' },
     ],
   },
   {
@@ -111,19 +108,18 @@ export const mesMenuConfig: MenuGroup[] = [
     icon: 'Settings',
     items: [
       { id: 'user', name: '사용자관리', path: '/system/user' },
-      { id: 'user-group', name: '사용자그룹관리', path: '/system/user-group' },
-      { id: 'permission', name: '권한관리', path: '/system/permission' },
+      { id: 'role', name: '권한관리', path: '/system/role' },
       { id: 'menu', name: '메뉴관리', path: '/system/menu' },
-      { id: 'login-history', name: '로그인내역', path: '/system/login-history' },
+      { id: 'log', name: '로그조회', path: '/system/log' },
     ],
   },
 ];
 
-// 대시보드는 별도 처리
+// 대시보드는 별도 메뉴로 처리 (모니터링 용도)
 export const dashboardMenu: MenuItem = {
   id: 'dashboard',
   name: '대시보드',
-  path: '/',
+  path: '/dashboard',
   icon: 'LayoutDashboard',
 };
 

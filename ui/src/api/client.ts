@@ -5,6 +5,7 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 
 // API Base URL - defaults to localhost for development
+// API 서버는 8000 포트에서 실행됨 (start-api.bat 참조)
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Create axios instance

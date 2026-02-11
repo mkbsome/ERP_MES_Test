@@ -33,7 +33,10 @@ function App() {
       <Router>
         <Layout>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            {/* MES 기본 화면: 작업지시관리 (실제 MES 스타일) */}
+            <Route path="/" element={<Navigate to="/planning/work-order" replace />} />
+            {/* 대시보드는 별도 경로로 접근 */}
+            <Route path="/dashboard" element={<Dashboard />} />
             {mesRoutes}
             {erpRoutes}
             <Route path="/production-legacy" element={<Production />} />
@@ -42,7 +45,7 @@ function App() {
             <Route path="/material-legacy" element={<Material />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/planning/work-order" replace />} />
           </Routes>
         </Layout>
       </Router>

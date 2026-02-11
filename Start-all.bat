@@ -28,29 +28,30 @@ start "API Server" cmd /k "cd /d %~dp0 && python -m uvicorn api.main:app --reloa
 
 timeout /t 5 /nobreak > nul
 
-echo [2/3] Starting MES/ERP UI... (Port 4173)
-start "MES/ERP UI" cmd /k "cd /d %~dp0ui && npm run dev -- --host --port 4173"
+echo [2/3] Starting MES UI... (Port 5173)
+start "MES UI" cmd /k "cd /d %~dp0ui && npm run dev -- --port 5173"
 
 timeout /t 3 /nobreak > nul
 
-echo [3/3] Starting ERP UI (Legacy)... (Port 5174)
-start "ERP UI Legacy" cmd /k "cd /d %~dp0erp-ui && npm run dev -- --host"
+echo [3/3] Starting Scenario Modifier UI... (Port 5174)
+start "Scenario Modifier UI" cmd /k "cd /d %~dp0scenario-modifier-ui && npm run dev -- --port 5174"
 
 echo.
 echo ========================================
 echo   All services started!
 echo ========================================
 echo.
-echo   API Server:  http://localhost:8000
-echo   API Docs:    http://localhost:8000/docs
-echo   MES/ERP UI:  http://localhost:4173
-echo   ERP UI:      http://localhost:5174
+echo   API Server:           http://localhost:8000
+echo   API Docs:             http://localhost:8000/docs
+echo   MES UI:               http://localhost:5173
+echo   Scenario Modifier:    http://localhost:5174
 echo.
 echo   Close each window or press Ctrl+C to stop.
 echo ========================================
 
 :: Open browser after services are ready
-timeout /t 10 /nobreak > nul
-start http://localhost:4173
+timeout /t 8 /nobreak > nul
+start http://localhost:5173
+start http://localhost:5174
 
 pause

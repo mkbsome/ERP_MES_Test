@@ -10,6 +10,50 @@ GreenBoard Electronics 가상 기업을 위한 ERP/MES 데이터 시뮬레이터
 2. **데모/영업용 시나리오** - 현실적인 제조 데이터로 고객 시연
 3. **통합 테스트 환경** - End-to-End 시스템 검증
 
+## 빠른 시작
+
+### 필수 요구사항
+- Python 3.9+
+- Node.js 18+
+- PostgreSQL 15+
+
+### 실행 방법
+
+```bash
+# 전체 서비스 일괄 실행 (권장)
+Start-all.bat
+```
+
+실행 후 자동으로 브라우저가 열립니다:
+- **MES UI**: http://localhost:5173
+- **Scenario Modifier**: http://localhost:5174
+- **API Docs**: http://localhost:8000/docs
+
+### 개별 실행
+
+| 배치 파일 | 설명 | 포트 |
+|-----------|------|------|
+| `Start-all.bat` | 전체 서비스 (API + UI 2개) | 8000, 5173, 5174 |
+| `start-api.bat` | API 서버만 | 8000 |
+| `start-mes-ui.bat` | MES UI만 | 5173 |
+| `start-scenario-ui.bat` | Scenario Modifier UI만 | 5174 |
+
+## UI 구성
+
+### 1. MES UI (포트 5173)
+실제 MES 시스템 스타일의 화면
+- 생산 현황 모니터링
+- 불량 관리
+- 설비 모니터링
+- 품질 관리
+- 재고/자재 관리
+
+### 2. Scenario Modifier UI (포트 5174)
+AI 이상탐지 테스트를 위한 데이터 조작 도구
+- 데이터 현황 대시보드
+- 시나리오 적용 (불량률 증가, 설비 문제 등)
+- 수정 이력 관리
+
 ## 가상 기업 프로필
 
 | 항목 | 내용 |
@@ -44,12 +88,41 @@ GreenBoard Electronics 가상 기업을 위한 ERP/MES 데이터 시뮬레이터
 
 ## 설치
 
+### 1. 저장소 클론
 ```bash
-# 의존성 설치
-pip install -r requirements.txt
+git clone https://github.com/mkbsome/ERP_MES_Test.git
+cd ERP_MES_Test
+```
 
-# PostgreSQL 데이터베이스 생성
-createdb erp_mes_simulator
+### 2. Python 의존성 설치
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Node.js 의존성 설치
+```bash
+# MES UI
+cd ui
+npm install
+
+# Scenario Modifier UI
+cd ../scenario-modifier-ui
+npm install
+```
+
+### 4. PostgreSQL 데이터베이스 설정
+```bash
+# 데이터베이스 생성
+createdb erp_mes_db
+
+# 또는 Docker 사용
+docker-compose up -d
+```
+
+### 5. 환경 변수 설정
+```bash
+# .env 파일 생성 (필요시)
+DATABASE_URL=postgresql://postgres:solutiontree8789@localhost:5432/erp_mes_db
 ```
 
 ## 사용법
@@ -114,33 +187,30 @@ python etl/raw_to_fact.py --run-etl --date 2024-07-01
 
 ```
 erp-mes-simulator/
+├── Start-all.bat              # 전체 서비스 실행
+├── start-api.bat              # API 서버 실행
+├── start-mes-ui.bat           # MES UI 실행
+├── start-scenario-ui.bat      # Scenario Modifier 실행
 ├── main.py                    # 메인 실행 스크립트
 ├── requirements.txt           # Python 의존성
+├── api/                       # FastAPI 백엔드
+│   ├── main.py
+│   └── routers/
+├── ui/                        # MES UI (React + Vite)
+│   ├── src/
+│   └── package.json
+├── scenario-modifier-ui/      # Scenario Modifier UI (React + Vite)
+│   ├── src/
+│   └── package.json
 ├── config/
 │   └── company.yaml           # 가상 기업 설정
 ├── schema/
 │   ├── erp/                   # ERP DDL
-│   │   ├── 01_master_tables.sql
-│   │   ├── 02_bom_routing.sql
-│   │   ├── 03_sales_order.sql
-│   │   ├── 04_purchase_order.sql
-│   │   ├── 05_inventory.sql
-│   │   ├── 06_production.sql
-│   │   ├── 07_quality.sql
-│   │   └── 08_cost.sql
 │   ├── mes/                   # MES DDL
-│   │   ├── 01_production.sql
-│   │   ├── 02_equipment.sql
-│   │   ├── 03_quality.sql
-│   │   └── 04_material.sql
 │   └── interface/             # 연동 DDL
-│       └── 01_erp_mes_interface.sql
 ├── generators/
 │   ├── master/                # 마스터 데이터 생성
-│   │   ├── master_generator.py
-│   │   └── db_writer.py
 │   └── transaction/           # 거래 데이터 생성
-│       └── transaction_generator.py
 └── etl/
     └── raw_to_fact.py         # AI 플랫폼 연계 ETL
 ```
