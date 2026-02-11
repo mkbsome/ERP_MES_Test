@@ -1,4 +1,4 @@
-import { Check, Info } from 'lucide-react';
+import { Check } from 'lucide-react';
 import clsx from 'clsx';
 import type { Scenario } from '../types/generator';
 

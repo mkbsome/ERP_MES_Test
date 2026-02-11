@@ -464,6 +464,44 @@ async def get_realtime_scenarios(
     return scenarios
 
 
+@router.get("/line-options", response_model=List[ParameterOption])
+async def get_line_options(
+    db: AsyncSession = Depends(get_db)
+):
+    """Get production line options"""
+    return await get_parameter_options_from_db("mes_production_line", db)
+
+
+@router.get("/equipment-options", response_model=List[ParameterOption])
+async def get_equipment_options(
+    line_code: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get equipment options, optionally filtered by line"""
+    from sqlalchemy import text
+
+    try:
+        if line_code:
+            result = await db.execute(text("""
+                SELECT equipment_code as value, equipment_name as label
+                FROM mes_equipment
+                WHERE line_code = :line_code AND is_active = true
+                ORDER BY equipment_code
+            """), {"line_code": line_code})
+        else:
+            result = await db.execute(text("""
+                SELECT equipment_code as value, equipment_name as label
+                FROM mes_equipment
+                WHERE is_active = true
+                ORDER BY equipment_code
+            """))
+        rows = result.fetchall()
+        return [ParameterOption(value=str(row[0]), label=str(row[1])) for row in rows]
+    except Exception as e:
+        print(f"Error fetching equipment options: {e}")
+        return []
+
+
 @router.get("/{scenario_id}", response_model=ScenarioInfo)
 async def get_scenario_detail(
     scenario_id: str,

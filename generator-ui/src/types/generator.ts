@@ -106,10 +106,10 @@ export interface ModuleSummary {
 
 // WebSocket 메시지
 export interface WSMessage {
-  type: 'progress' | 'completed' | 'error' | 'log';
-  job_id: string;
-  data: GeneratorProgress | GeneratorSummary | string;
-  timestamp: string;
+  type: 'progress' | 'completed' | 'error' | 'log' | 'connected' | 'started';
+  job_id?: string;
+  data?: GeneratorProgress | GeneratorSummary | string | { level: string; message: string } | { error: string } | { total_records: number; duration_seconds: number };
+  timestamp?: string;
 }
 
 // API 응답
@@ -117,6 +117,11 @@ export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+// Generator Job with optional success property for API response
+export interface GeneratorJobResponse extends GeneratorJob {
+  success?: boolean;
 }
 
 // 시나리오 카테고리 메타데이터

@@ -273,7 +273,7 @@ export default function ScenarioExecuteModal({ scenario, onClose, onExecute }: P
                           type="number"
                           min={param.min}
                           max={param.max}
-                          value={Number(parameterValues[param.name]) || param.default || ''}
+                          value={parameterValues[param.name] !== undefined ? Number(parameterValues[param.name]) : (param.default !== undefined ? Number(param.default) : '')}
                           onChange={(e) => handleParameterChange(param.name, Number(e.target.value))}
                           className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />

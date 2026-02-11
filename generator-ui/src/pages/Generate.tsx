@@ -4,10 +4,8 @@ import {
   Square,
   Calendar,
   Database,
-  Download,
   RefreshCw,
   CheckCircle,
-  XCircle,
   Loader2,
   Factory,
   ShoppingCart,
@@ -17,7 +15,6 @@ import {
 import clsx from 'clsx';
 import ProgressBar from '../components/ProgressBar';
 import LogViewer from '../components/LogViewer';
-import StatCard from '../components/StatCard';
 import { useGeneratorStore } from '../stores/generatorStore';
 import { GeneratorWebSocket } from '../api/websocket';
 import { generatorApi } from '../api/generator';
@@ -42,7 +39,7 @@ export default function Generate() {
   const [useWebSocket, setUseWebSocket] = useState(true);
   const [simulationSpeed, setSimulationSpeed] = useState(1);
   const wsRef = useRef<GeneratorWebSocket | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // WebSocket message handler
   const handleWSMessage = useCallback((message: WSMessage) => {
@@ -256,19 +253,18 @@ export default function Generate() {
           enabled_scenarios: Array.from(selectedScenarios)
         });
 
-        if (response.success && response.data) {
-          const job = response.data;
-          setCurrentJob({
-            ...newJob,
-            id: job.id
-          });
-          // Subscribe to job updates via WebSocket
-          wsRef.current?.send({
-            type: 'subscribe',
-            job_id: job.id
-          });
-          addLog(`📋 Job ID: ${job.id}`);
-        }
+        // startGeneration returns GeneratorJob directly
+        const job = response;
+        setCurrentJob({
+          ...newJob,
+          id: job.id
+        });
+        // Subscribe to job updates via WebSocket
+        wsRef.current?.send({
+          type: 'subscribe',
+          job_id: job.id
+        });
+        addLog(`📋 Job ID: ${job.id}`);
       } catch (error) {
         addLog('⚠️ API 연결 실패, 로컬 시뮬레이션으로 전환합니다.');
         simulateProgressLocally();

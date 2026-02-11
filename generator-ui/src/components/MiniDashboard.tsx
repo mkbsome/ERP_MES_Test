@@ -8,7 +8,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import clsx from 'clsx';
-import apiClient from '../api/client';
+// import apiClient from '../api/client'; // TODO: Re-enable when API is ready
 
 interface SystemStatus {
   defectRate: number;

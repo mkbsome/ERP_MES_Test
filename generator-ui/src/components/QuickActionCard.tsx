@@ -70,7 +70,7 @@ const severityStyles = {
   }
 };
 
-export default function QuickActionCard({ id, name, description, severity, icon, onClick }: Props) {
+export default function QuickActionCard({ id: _id, name, description, severity, icon, onClick }: Props) {
   const Icon = iconMap[icon] || AlertTriangle;
   const styles = severityStyles[severity];
 

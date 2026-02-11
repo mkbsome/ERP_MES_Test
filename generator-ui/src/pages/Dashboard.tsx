@@ -68,7 +68,7 @@ const mockRecentJobs: GeneratorJob[] = [
 ];
 
 export default function Dashboard() {
-  const { scenarios, selectedScenarios, jobHistory, setJobHistory } = useGeneratorStore();
+  const { scenarios, selectedScenarios, setJobHistory } = useGeneratorStore();
   const [stats, setStats] = useState({
     totalScenarios: 55,
     enabledScenarios: 0,
