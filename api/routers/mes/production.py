@@ -56,16 +56,16 @@ async def get_work_orders(
     if product_code:
         query = query.where(ProductionOrder.product_code == product_code)
     if start_date:
-        query = query.where(ProductionOrder.planned_start >= datetime.combine(start_date, datetime.min.time()))
+        query = query.where(ProductionOrder.order_date >= start_date)
     if end_date:
-        query = query.where(ProductionOrder.planned_start <= datetime.combine(end_date, datetime.max.time()))
+        query = query.where(ProductionOrder.order_date <= end_date)
 
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
     total = await db.scalar(count_query) or 0
 
     # Paginate
-    query = query.order_by(ProductionOrder.planned_start.desc())
+    query = query.order_by(ProductionOrder.order_date.desc())
     query = query.offset((page - 1) * page_size).limit(page_size)
 
     result = await db.execute(query)
@@ -75,10 +75,14 @@ async def get_work_orders(
     items = []
     for order in orders:
         order_dict = ProductionOrderResponse.model_validate(order).model_dump()
-        if order.target_qty and order.target_qty > 0:
-            order_dict["completion_rate"] = float(order.produced_qty / order.target_qty) * 100
-        if order.produced_qty and order.produced_qty > 0:
-            order_dict["defect_rate"] = float(order.defect_qty / order.produced_qty) * 100
+        produced = order.produced_qty or 0
+        target = order.target_qty or 0
+        defect = order.defect_qty or 0
+
+        if target > 0:
+            order_dict["calc_completion_rate"] = float(produced / target) * 100
+        if produced > 0:
+            order_dict["calc_defect_rate"] = float(defect / produced) * 100
         items.append(ProductionOrderResponse(**order_dict))
 
     return ProductionOrderListResponse(
@@ -182,7 +186,7 @@ async def get_production_results(
     page_size: int = Query(20, ge=1, le=100),
     production_order_no: Optional[str] = None,
     line_code: Optional[str] = None,
-    shift_code: Optional[str] = None,
+    shift: Optional[str] = None,
     start_datetime: Optional[datetime] = None,
     end_datetime: Optional[datetime] = None,
 ):
@@ -195,8 +199,8 @@ async def get_production_results(
         query = query.where(ProductionResult.production_order_no == production_order_no)
     if line_code:
         query = query.where(ProductionResult.line_code == line_code)
-    if shift_code:
-        query = query.where(ProductionResult.shift_code == shift_code)
+    if shift:
+        query = query.where(ProductionResult.shift == shift)
     if start_datetime:
         query = query.where(ProductionResult.result_timestamp >= start_datetime)
     if end_datetime:
@@ -237,15 +241,7 @@ async def get_realtime_production(
     line_code: Optional[str] = None,
     limit: int = Query(100, ge=1, le=500),
 ):
-    """Get realtime production data (with mock data fallback)
-
-    Returns data structure expected by Dashboard:
-    {
-        "hourly": [...],
-        "lines": [...],
-        "summary": {...}
-    }
-    """
+    """Get realtime production data (with mock data fallback)"""
     try:
         tenant_id = UUID(settings.default_tenant_id)
 
@@ -277,16 +273,7 @@ async def get_daily_production_analysis(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
 ):
-    """Get daily production summary (with mock data fallback)
-
-    Returns data structure expected by Dashboard:
-    {
-        "daily_data": [{today's data}],
-        "product_distribution": [...],
-        "by_line": [...],
-        ...
-    }
-    """
+    """Get daily production summary (with mock data fallback)"""
     try:
         tenant_id = UUID(settings.default_tenant_id)
 
@@ -371,7 +358,8 @@ async def get_line_production_status(
 
     completion_rate = 0.0
     if current_order and current_order.target_qty and current_order.target_qty > 0:
-        completion_rate = float(current_order.produced_qty / current_order.target_qty) * 100
+        produced = current_order.produced_qty or 0
+        completion_rate = float(produced / current_order.target_qty) * 100
 
     return LineProductionStatus(
         line_code=line_code,

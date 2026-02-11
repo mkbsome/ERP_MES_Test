@@ -1,7 +1,7 @@
 """
 Production-related Pydantic schemas
 """
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 from enum import Enum
 from typing import Optional, List
@@ -21,36 +21,23 @@ class ProductionOrderStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class ResultType(str, Enum):
-    """Production result type"""
-    NORMAL = "normal"
-    REWORK = "rework"
-    TEST = "test"
-    TRIAL = "trial"
-    SAMPLE = "sample"
-
-
 # ==================== Production Order ====================
 
 class ProductionOrderBase(BaseModel):
     """Base schema for production order"""
     product_code: str = Field(..., max_length=30)
     product_name: Optional[str] = Field(None, max_length=200)
-    line_code: str = Field(..., max_length=20)
+    line_code: Optional[str] = Field(None, max_length=20)
     target_qty: Decimal = Field(..., gt=0)
-    unit: str = Field(default="PNL", max_length=10)
-    planned_start: datetime
-    planned_end: datetime
-    priority: int = Field(default=5, ge=1, le=10)
-    lot_no: Optional[str] = Field(None, max_length=50)
-    customer_code: Optional[str] = Field(None, max_length=20)
-    sales_order_no: Optional[str] = Field(None, max_length=20)
-    notes: Optional[str] = None
+    planned_start: Optional[datetime] = None
+    planned_end: Optional[datetime] = None
+    priority: Optional[int] = Field(default=5, ge=1, le=10)
 
 
 class ProductionOrderCreate(ProductionOrderBase):
     """Schema for creating production order"""
     erp_work_order_no: Optional[str] = Field(None, max_length=20)
+    order_date: Optional[date] = None
 
 
 class ProductionOrderUpdate(BaseModel):
@@ -63,49 +50,40 @@ class ProductionOrderUpdate(BaseModel):
     good_qty: Optional[Decimal] = None
     defect_qty: Optional[Decimal] = None
     scrap_qty: Optional[Decimal] = None
-    current_operation: Optional[int] = None
-    notes: Optional[str] = None
 
 
-class ProductionOrderResponse(ProductionOrderBase):
+class ProductionOrderResponse(BaseModel):
     """Response schema for production order"""
     id: UUID
     tenant_id: UUID
     production_order_no: str
     erp_work_order_no: Optional[str] = None
-    product_rev: Optional[str] = None
-    started_qty: Decimal
-    produced_qty: Decimal
-    good_qty: Decimal
-    defect_qty: Decimal
-    scrap_qty: Decimal
+    order_date: date
+    product_code: str
+    product_name: Optional[str] = None
+    line_code: Optional[str] = None
+    target_qty: Decimal
+    produced_qty: Optional[Decimal] = Decimal(0)
+    good_qty: Optional[Decimal] = Decimal(0)
+    defect_qty: Optional[Decimal] = Decimal(0)
+    scrap_qty: Optional[Decimal] = Decimal(0)
+    bom_id: Optional[int] = None
+    routing_id: Optional[int] = None
+    planned_start: Optional[datetime] = None
+    planned_end: Optional[datetime] = None
     actual_start: Optional[datetime] = None
     actual_end: Optional[datetime] = None
-    status: ProductionOrderStatus
-    current_operation: Optional[int] = None
-    bom_id: Optional[UUID] = None
-    routing_id: Optional[UUID] = None
-    created_by: Optional[str] = None
-    created_at: datetime
+    status: Optional[str] = None
+    priority: Optional[int] = None
+    completion_rate: Optional[Decimal] = None
+    created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
-    # Calculated fields
-    completion_rate: Optional[float] = None
-    defect_rate: Optional[float] = None
+    # Calculated fields (not from DB)
+    calc_completion_rate: Optional[float] = None
+    calc_defect_rate: Optional[float] = None
 
     model_config = ConfigDict(from_attributes=True)
-
-    @property
-    def calc_completion_rate(self) -> float:
-        if self.target_qty and self.target_qty > 0:
-            return float(self.produced_qty / self.target_qty) * 100
-        return 0.0
-
-    @property
-    def calc_defect_rate(self) -> float:
-        if self.produced_qty and self.produced_qty > 0:
-            return float(self.defect_qty / self.produced_qty) * 100
-        return 0.0
 
 
 class ProductionOrderListResponse(BaseModel):
@@ -123,58 +101,50 @@ class ProductionOrderListResponse(BaseModel):
 
 class ProductionResultBase(BaseModel):
     """Base schema for production result"""
-    production_order_no: str = Field(..., max_length=20)
-    shift_code: str = Field(..., max_length=10)
-    line_code: str = Field(..., max_length=20)
+    production_order_no: Optional[str] = Field(None, max_length=20)
+    line_code: Optional[str] = Field(None, max_length=20)
     equipment_code: Optional[str] = Field(None, max_length=30)
-    operation_no: int
-    operation_name: Optional[str] = Field(None, max_length=100)
+    operation_seq: Optional[int] = None
     product_code: str = Field(..., max_length=30)
     lot_no: Optional[str] = Field(None, max_length=50)
     input_qty: Decimal
     output_qty: Decimal
     good_qty: Decimal
-    defect_qty: Decimal = Decimal(0)
-    rework_qty: Decimal = Decimal(0)
-    scrap_qty: Decimal = Decimal(0)
-    unit: str = Field(default="PNL", max_length=10)
+    defect_qty: Optional[Decimal] = Decimal(0)
+    scrap_qty: Optional[Decimal] = Decimal(0)
 
 
 class ProductionResultCreate(ProductionResultBase):
     """Schema for creating production result"""
-    result_timestamp: Optional[datetime] = None  # Defaults to now
+    result_timestamp: Optional[datetime] = None
     cycle_time_sec: Optional[Decimal] = None
-    takt_time_sec: Optional[Decimal] = None
-    setup_time_min: Optional[Decimal] = None
-    run_time_min: Optional[Decimal] = None
-    idle_time_min: Optional[Decimal] = None
-    operator_code: Optional[str] = Field(None, max_length=20)
-    operator_name: Optional[str] = Field(None, max_length=100)
-    result_type: ResultType = ResultType.NORMAL
-    notes: Optional[str] = None
-    reported_by: Optional[str] = Field(None, max_length=20)
+    worker_id: Optional[str] = Field(None, max_length=20)
+    shift: Optional[str] = Field(None, max_length=10)
 
 
-class ProductionResultResponse(ProductionResultBase):
+class ProductionResultResponse(BaseModel):
     """Response schema for production result"""
     id: UUID
     tenant_id: UUID
+    production_order_id: Optional[UUID] = None
+    production_order_no: Optional[str] = None
     result_timestamp: datetime
+    operation_seq: Optional[int] = None
+    line_code: Optional[str] = None
+    equipment_code: Optional[str] = None
+    product_code: str
+    lot_no: Optional[str] = None
+    input_qty: Decimal
+    output_qty: Decimal
+    good_qty: Decimal
+    defect_qty: Optional[Decimal] = Decimal(0)
+    scrap_qty: Optional[Decimal] = Decimal(0)
     cycle_time_sec: Optional[Decimal] = None
-    takt_time_sec: Optional[Decimal] = None
-    setup_time_min: Optional[Decimal] = None
-    run_time_min: Optional[Decimal] = None
-    idle_time_min: Optional[Decimal] = None
-    operator_code: Optional[str] = None
-    operator_name: Optional[str] = None
-    result_type: ResultType
-    notes: Optional[str] = None
-    reported_by: Optional[str] = None
-    created_at: datetime
-
-    # Calculated fields
-    yield_rate: Optional[float] = None
-    defect_rate: Optional[float] = None
+    yield_rate: Optional[Decimal] = None
+    defect_rate: Optional[Decimal] = None
+    worker_id: Optional[str] = None
+    shift: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -207,7 +177,7 @@ class RealtimeProductionResponse(BaseModel):
     defect_count: int
     cycle_time_ms: Optional[int] = None
     target_cycle_time_ms: Optional[int] = None
-    equipment_status: Optional[EquipmentStatusValue] = None
+    equipment_status: Optional[str] = None
     speed_rpm: Optional[Decimal] = None
     temperature_celsius: Optional[Decimal] = None
     pressure_bar: Optional[Decimal] = None
@@ -222,7 +192,7 @@ class RealtimeProductionResponse(BaseModel):
 class DailyProductionSummary(BaseModel):
     """Daily production summary"""
     date: datetime
-    line_code: str
+    line_code: Optional[str] = None
     total_input: Decimal
     total_output: Decimal
     total_good: Decimal
