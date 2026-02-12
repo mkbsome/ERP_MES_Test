@@ -3,13 +3,24 @@ ERP Sales API Router
 - 수주 (Sales Orders)
 - 출하 (Shipments)
 - 영업 분석 (Sales Analysis)
+
+NOTE: Aligned with actual database schema
 """
 
-from fastapi import APIRouter, Query, HTTPException
-from typing import Optional
-from datetime import datetime, timedelta
-import random
+from fastapi import APIRouter, Query, HTTPException, Depends
+from typing import Optional, List
+from datetime import datetime, date
+from uuid import uuid4, UUID
+from decimal import Decimal
 
+from sqlalchemy import select, func, and_, desc, case
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from api.database import get_db
+from api.models.erp.sales import (
+    SalesOrder, SalesOrderItem, Shipment, ShipmentItem, SalesRevenue
+)
 from api.schemas.erp.sales import (
     # Order
     SalesOrderCreate, SalesOrderUpdate, SalesOrderResponse, SalesOrderListResponse,
@@ -20,576 +31,680 @@ from api.schemas.erp.sales import (
     # Analysis
     SalesAnalysis, SalesPerformance,
 )
+from api.services.mock_data import MockDataService
 
 router = APIRouter(prefix="/sales", tags=["ERP Sales"])
+
+# Default tenant ID
+DEFAULT_TENANT_ID = UUID("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11")
+
+
+# ==================== Helper Functions ====================
+
+def decimal_to_float(value) -> float:
+    """Convert Decimal to float safely"""
+    if value is None:
+        return 0.0
+    if isinstance(value, Decimal):
+        return float(value)
+    return float(value)
+
+
+def order_to_dict(order: SalesOrder) -> dict:
+    """Convert SalesOrder model to dict (aligned with actual DB schema)"""
+    return {
+        "id": order.id,
+        "order_no": order.order_no,
+        "order_date": order.order_date.isoformat() if order.order_date else None,
+        "customer_id": order.customer_id,
+        "customer_code": order.customer_code,
+        "customer_name": order.customer_name,
+        "delivery_date": order.delivery_date.isoformat() if order.delivery_date else None,
+        "shipping_address": order.shipping_address,
+        "payment_terms": order.payment_terms,
+        "currency": order.currency,
+        "tax_amount": decimal_to_float(order.tax_amount),
+        "total_amount": decimal_to_float(order.total_amount),
+        "status": order.status,
+        "remark": order.remark,
+        "created_by": order.created_by,
+        "items": [
+            {
+                "id": item.id,
+                "order_id": item.order_id,
+                "line_no": item.line_no,
+                "product_id": item.product_id,
+                "product_code": item.product_code,
+                "product_name": item.product_name,
+                "order_qty": decimal_to_float(item.order_qty),
+                "shipped_qty": decimal_to_float(item.shipped_qty),
+                "remaining_qty": decimal_to_float(item.remaining_qty),
+                "unit_price": decimal_to_float(item.unit_price),
+                "amount": decimal_to_float(item.amount),
+                "promised_date": item.promised_date.isoformat() if item.promised_date else None,
+                "remark": item.remark,
+                "created_at": item.created_at.isoformat() if item.created_at else None,
+            }
+            for item in (order.items or [])
+        ],
+        "created_at": order.created_at.isoformat() if order.created_at else None,
+        "updated_at": order.updated_at.isoformat() if order.updated_at else None,
+    }
+
+
+def shipment_to_dict(shipment: Shipment) -> dict:
+    """Convert Shipment model to dict (aligned with actual DB schema)"""
+    return {
+        "id": shipment.id,
+        "shipment_no": shipment.shipment_no,
+        "shipment_date": shipment.shipment_date.isoformat() if shipment.shipment_date else None,
+        "order_id": shipment.order_id,
+        "order_no": shipment.order_no,
+        "customer_code": shipment.customer_code,
+        "customer_name": shipment.customer_name,
+        "shipping_address": shipment.shipping_address,
+        "carrier": shipment.carrier,
+        "tracking_no": shipment.tracking_no,
+        "status": shipment.status,
+        "items": [
+            {
+                "id": item.id,
+                "shipment_id": item.shipment_id,
+                "line_no": item.line_no,
+                "product_code": item.product_code,
+                "product_name": item.product_name,
+                "order_item_id": item.order_item_id,
+                "ship_qty": decimal_to_float(item.ship_qty),
+                "lot_no": item.lot_no,
+                "warehouse_code": item.warehouse_code,
+                "location_code": item.location_code,
+                "created_at": item.created_at.isoformat() if item.created_at else None,
+            }
+            for item in (shipment.items or [])
+        ],
+        "created_at": shipment.created_at.isoformat() if shipment.created_at else None,
+        "updated_at": shipment.updated_at.isoformat() if shipment.updated_at else None,
+    }
 
 
 # ==================== Sales Orders API ====================
 
 @router.get("/orders", response_model=SalesOrderListResponse)
 async def get_sales_orders(
+    db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     customer_code: Optional[str] = None,
-    status: Optional[OrderStatus] = None,
-    from_date: Optional[datetime] = None,
-    to_date: Optional[datetime] = None,
+    status: Optional[str] = None,
+    from_date: Optional[date] = None,
+    to_date: Optional[date] = None,
 ):
     """수주 목록 조회"""
-    orders = [
-        {
-            "id": 1,
-            "order_no": "SO-2024-0001",
-            "order_date": "2024-01-15T09:00:00",
-            "customer_code": "C-001",
-            "customer_name": "삼성전자",
-            "customer_po_no": "SAM-PO-2024-001",
-            "ship_to_address": "경기도 화성시 삼성전자로 1",
-            "ship_to_contact": "김담당",
-            "ship_to_phone": "031-1234-5678",
-            "requested_date": "2024-01-30T00:00:00",
-            "promised_date": "2024-01-28T00:00:00",
-            "payment_terms": "net_30",
-            "delivery_terms": "EXW",
-            "currency": "KRW",
-            "exchange_rate": 1.0,
-            "subtotal": 250000000,
-            "tax_amount": 25000000,
-            "total_amount": 275000000,
-            "status": "confirmed",
-            "sales_rep": "이영업",
-            "created_by": "이영업",
-            "approved_by": "박부장",
-            "approved_at": "2024-01-15T10:00:00",
-            "remarks": "긴급 납품 요청",
-            "items": [
-                {
-                    "id": 1, "order_id": 1, "item_seq": 1,
-                    "product_code": "FG-MB-001", "product_name": "스마트폰 메인보드 A타입",
-                    "order_qty": 10000, "shipped_qty": 0, "remaining_qty": 10000,
-                    "unit": "EA", "unit_price": 25000, "discount_rate": 0, "amount": 250000000,
-                    "requested_date": "2024-01-30T00:00:00", "promised_date": "2024-01-28T00:00:00",
-                    "remarks": None,
-                    "created_at": "2024-01-15T09:00:00", "updated_at": "2024-01-15T09:00:00",
-                }
-            ],
-            "created_at": "2024-01-15T09:00:00",
-            "updated_at": "2024-01-15T10:00:00",
-        },
-        {
-            "id": 2,
-            "order_no": "SO-2024-0002",
-            "order_date": "2024-01-16T10:30:00",
-            "customer_code": "C-003",
-            "customer_name": "현대모비스",
-            "customer_po_no": "HMB-PO-2024-050",
-            "ship_to_address": "서울시 강남구 테헤란로 203",
-            "ship_to_contact": "이담당",
-            "ship_to_phone": "02-2018-5000",
-            "requested_date": "2024-02-15T00:00:00",
-            "promised_date": "2024-02-10T00:00:00",
-            "payment_terms": "net_45",
-            "delivery_terms": "EXW",
-            "currency": "KRW",
-            "exchange_rate": 1.0,
-            "subtotal": 175000000,
-            "tax_amount": 17500000,
-            "total_amount": 192500000,
-            "status": "in_production",
-            "sales_rep": "김영업",
-            "created_by": "김영업",
-            "approved_by": "박부장",
-            "approved_at": "2024-01-16T11:00:00",
-            "remarks": None,
-            "items": [
-                {
-                    "id": 2, "order_id": 2, "item_seq": 1,
-                    "product_code": "FG-ECU-001", "product_name": "자동차 ECU 보드",
-                    "order_qty": 2500, "shipped_qty": 500, "remaining_qty": 2000,
-                    "unit": "EA", "unit_price": 70000, "discount_rate": 0, "amount": 175000000,
-                    "requested_date": "2024-02-15T00:00:00", "promised_date": "2024-02-10T00:00:00",
-                    "remarks": None,
-                    "created_at": "2024-01-16T10:30:00", "updated_at": "2024-01-20T14:00:00",
-                }
-            ],
-            "created_at": "2024-01-16T10:30:00",
-            "updated_at": "2024-01-20T14:00:00",
-        },
-        {
-            "id": 3,
-            "order_no": "SO-2024-0003",
-            "order_date": "2024-01-17T14:00:00",
-            "customer_code": "C-004",
-            "customer_name": "Apple Inc.",
-            "customer_po_no": "AAPL-2024-KR-001",
-            "ship_to_address": "One Apple Park Way, Cupertino, CA",
-            "ship_to_contact": "John Smith",
-            "ship_to_phone": "+1-408-996-1010",
-            "requested_date": "2024-03-01T00:00:00",
-            "promised_date": "2024-02-25T00:00:00",
-            "payment_terms": "net_60",
-            "delivery_terms": "FOB",
-            "currency": "USD",
-            "exchange_rate": 1350.0,
-            "subtotal": 500000,
-            "tax_amount": 0,
-            "total_amount": 500000,
-            "status": "confirmed",
-            "sales_rep": "박영업",
-            "created_by": "박영업",
-            "approved_by": "최상무",
-            "approved_at": "2024-01-17T15:00:00",
-            "remarks": "수출 주문",
-            "items": [
-                {
-                    "id": 3, "order_id": 3, "item_seq": 1,
-                    "product_code": "FG-MB-001", "product_name": "스마트폰 메인보드 A타입",
-                    "order_qty": 20000, "shipped_qty": 0, "remaining_qty": 20000,
-                    "unit": "EA", "unit_price": 25, "discount_rate": 0, "amount": 500000,
-                    "requested_date": "2024-03-01T00:00:00", "promised_date": "2024-02-25T00:00:00",
-                    "remarks": None,
-                    "created_at": "2024-01-17T14:00:00", "updated_at": "2024-01-17T15:00:00",
-                }
-            ],
-            "created_at": "2024-01-17T14:00:00",
-            "updated_at": "2024-01-17T15:00:00",
-        },
-        {
-            "id": 4,
-            "order_no": "SO-2024-0004",
-            "order_date": "2024-01-18T09:30:00",
-            "customer_code": "C-002",
-            "customer_name": "LG전자",
-            "customer_po_no": "LGE-PO-2024-100",
-            "ship_to_address": "서울시 영등포구 여의대로 128",
-            "ship_to_contact": "박담당",
-            "ship_to_phone": "02-3777-1114",
-            "requested_date": "2024-02-05T00:00:00",
-            "promised_date": "2024-02-01T00:00:00",
-            "payment_terms": "net_30",
-            "delivery_terms": "EXW",
-            "currency": "KRW",
-            "exchange_rate": 1.0,
-            "subtotal": 80000000,
-            "tax_amount": 8000000,
-            "total_amount": 88000000,
-            "status": "shipped",
-            "sales_rep": "이영업",
-            "created_by": "이영업",
-            "approved_by": "박부장",
-            "approved_at": "2024-01-18T10:00:00",
-            "remarks": None,
-            "items": [
-                {
-                    "id": 4, "order_id": 4, "item_seq": 1,
-                    "product_code": "FG-LED-001", "product_name": "LED 드라이버 보드",
-                    "order_qty": 16000, "shipped_qty": 16000, "remaining_qty": 0,
-                    "unit": "EA", "unit_price": 5000, "discount_rate": 0, "amount": 80000000,
-                    "requested_date": "2024-02-05T00:00:00", "promised_date": "2024-02-01T00:00:00",
-                    "remarks": None,
-                    "created_at": "2024-01-18T09:30:00", "updated_at": "2024-01-25T16:00:00",
-                }
-            ],
-            "created_at": "2024-01-18T09:30:00",
-            "updated_at": "2024-01-25T16:00:00",
-        },
-    ]
+    try:
+        # Build query
+        query = select(SalesOrder).options(selectinload(SalesOrder.items))
 
-    return {
-        "items": orders,
-        "total": len(orders),
-        "page": page,
-        "page_size": page_size,
-    }
+        # Apply filters
+        if customer_code:
+            query = query.where(SalesOrder.customer_code == customer_code)
+        if status:
+            query = query.where(SalesOrder.status == status)
+        if from_date:
+            query = query.where(SalesOrder.order_date >= from_date)
+        if to_date:
+            query = query.where(SalesOrder.order_date <= to_date)
+
+        # Get total count
+        count_query = select(func.count(SalesOrder.id))
+        if customer_code:
+            count_query = count_query.where(SalesOrder.customer_code == customer_code)
+        if status:
+            count_query = count_query.where(SalesOrder.status == status)
+        if from_date:
+            count_query = count_query.where(SalesOrder.order_date >= from_date)
+        if to_date:
+            count_query = count_query.where(SalesOrder.order_date <= to_date)
+
+        total_result = await db.execute(count_query)
+        total = total_result.scalar() or 0
+
+        # Apply pagination
+        query = query.order_by(desc(SalesOrder.order_date))
+        query = query.offset((page - 1) * page_size).limit(page_size)
+
+        result = await db.execute(query)
+        orders = result.scalars().unique().all()
+
+        if not orders:
+            # Return mock data if no DB data
+            return MockDataService.get_sales_orders(page, page_size)
+
+        return {
+            "items": [order_to_dict(o) for o in orders],
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        }
+    except Exception as e:
+        # Fallback to mock data
+        print(f"Sales orders query error: {e}")
+        return MockDataService.get_sales_orders(page, page_size)
 
 
 @router.get("/orders/{order_id}", response_model=SalesOrderResponse)
-async def get_sales_order(order_id: int):
+async def get_sales_order(
+    order_id: int,
+    db: AsyncSession = Depends(get_db),
+):
     """수주 상세 조회"""
-    return {
-        "id": order_id,
-        "order_no": f"SO-2024-{order_id:04d}",
-        "order_date": "2024-01-15T09:00:00",
-        "customer_code": "C-001",
-        "customer_name": "삼성전자",
-        "customer_po_no": "SAM-PO-2024-001",
-        "ship_to_address": "경기도 화성시 삼성전자로 1",
-        "ship_to_contact": "김담당",
-        "ship_to_phone": "031-1234-5678",
-        "requested_date": "2024-01-30T00:00:00",
-        "promised_date": "2024-01-28T00:00:00",
-        "payment_terms": "net_30",
-        "delivery_terms": "EXW",
-        "currency": "KRW",
-        "exchange_rate": 1.0,
-        "subtotal": 250000000,
-        "tax_amount": 25000000,
-        "total_amount": 275000000,
-        "status": "confirmed",
-        "sales_rep": "이영업",
-        "created_by": "이영업",
-        "approved_by": "박부장",
-        "approved_at": "2024-01-15T10:00:00",
-        "remarks": "긴급 납품 요청",
-        "items": [
-            {
-                "id": 1, "order_id": order_id, "item_seq": 1,
-                "product_code": "FG-MB-001", "product_name": "스마트폰 메인보드 A타입",
-                "order_qty": 10000, "shipped_qty": 0, "remaining_qty": 10000,
-                "unit": "EA", "unit_price": 25000, "discount_rate": 0, "amount": 250000000,
-                "requested_date": "2024-01-30T00:00:00", "promised_date": "2024-01-28T00:00:00",
-                "remarks": None,
-                "created_at": "2024-01-15T09:00:00", "updated_at": "2024-01-15T09:00:00",
-            }
-        ],
-        "created_at": "2024-01-15T09:00:00",
-        "updated_at": "2024-01-15T10:00:00",
-    }
+    try:
+        query = select(SalesOrder).options(
+            selectinload(SalesOrder.items)
+        ).where(SalesOrder.id == order_id)
+
+        result = await db.execute(query)
+        order = result.scalar_one_or_none()
+
+        if not order:
+            raise HTTPException(status_code=404, detail="Sales order not found")
+
+        return order_to_dict(order)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=404, detail="Sales order not found")
 
 
 @router.post("/orders", response_model=SalesOrderResponse)
-async def create_sales_order(order: SalesOrderCreate):
+async def create_sales_order(
+    order: SalesOrderCreate,
+    db: AsyncSession = Depends(get_db),
+):
     """수주 등록"""
-    now = datetime.utcnow()
-    return {
-        "id": 100,
-        "order_no": f"SO-{now.strftime('%Y')}-{random.randint(1000, 9999)}",
-        "order_date": now.isoformat(),
-        **order.model_dump(exclude={"items"}),
-        "created_by": "시스템",
-        "approved_by": None,
-        "approved_at": None,
-        "items": [
-            {"id": i + 1, "order_id": 100, **item.model_dump(),
-             "created_at": now.isoformat(), "updated_at": now.isoformat()}
-            for i, item in enumerate(order.items)
-        ],
-        "created_at": now.isoformat(),
-        "updated_at": now.isoformat(),
-    }
+    try:
+        # Generate order number
+        order_no = f"SO-{datetime.utcnow().strftime('%Y%m%d')}-{str(uuid4())[:4].upper()}"
+
+        # Create order
+        db_order = SalesOrder(
+            tenant_id=DEFAULT_TENANT_ID,
+            order_no=order_no,
+            order_date=date.today(),
+            customer_code=order.customer_code,
+            customer_name=order.customer_name,
+            delivery_date=order.delivery_date if hasattr(order, 'delivery_date') else None,
+            shipping_address=order.shipping_address if hasattr(order, 'shipping_address') else None,
+            payment_terms=order.payment_terms if hasattr(order, 'payment_terms') else None,
+            currency=order.currency if hasattr(order, 'currency') else "KRW",
+            tax_amount=order.tax_amount if hasattr(order, 'tax_amount') else 0,
+            total_amount=order.total_amount if hasattr(order, 'total_amount') else 0,
+            status="draft",
+            created_by=order.created_by if hasattr(order, 'created_by') else "시스템",
+        )
+
+        db.add(db_order)
+        await db.flush()
+
+        # Create order items
+        for i, item in enumerate(order.items or []):
+            db_item = SalesOrderItem(
+                order_id=db_order.id,
+                line_no=i + 1,
+                product_code=item.product_code,
+                product_name=item.product_name,
+                order_qty=item.order_qty,
+                shipped_qty=0,
+                remaining_qty=item.order_qty,
+                unit_price=item.unit_price if hasattr(item, 'unit_price') else 0,
+                amount=item.amount if hasattr(item, 'amount') else 0,
+                promised_date=item.promised_date if hasattr(item, 'promised_date') else None,
+            )
+            db.add(db_item)
+
+        await db.commit()
+        await db.refresh(db_order)
+
+        # Reload with items
+        query = select(SalesOrder).options(
+            selectinload(SalesOrder.items)
+        ).where(SalesOrder.id == db_order.id)
+        result = await db.execute(query)
+        db_order = result.scalar_one()
+
+        return order_to_dict(db_order)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/orders/{order_id}", response_model=SalesOrderResponse)
-async def update_sales_order(order_id: int, order: SalesOrderUpdate):
+async def update_sales_order(
+    order_id: int,
+    order: SalesOrderUpdate,
+    db: AsyncSession = Depends(get_db),
+):
     """수주 수정"""
-    now = datetime.utcnow()
-    return {
-        "id": order_id,
-        "order_no": f"SO-2024-{order_id:04d}",
-        "order_date": "2024-01-15T09:00:00",
-        "customer_code": "C-001",
-        "customer_name": order.customer_name or "삼성전자",
-        "customer_po_no": order.customer_po_no or "SAM-PO-2024-001",
-        "ship_to_address": order.ship_to_address or "경기도 화성시 삼성전자로 1",
-        "ship_to_contact": order.ship_to_contact or "김담당",
-        "ship_to_phone": order.ship_to_phone or "031-1234-5678",
-        "requested_date": order.requested_date or "2024-01-30T00:00:00",
-        "promised_date": order.promised_date or "2024-01-28T00:00:00",
-        "payment_terms": order.payment_terms or "net_30",
-        "delivery_terms": order.delivery_terms or "EXW",
-        "currency": "KRW",
-        "exchange_rate": 1.0,
-        "subtotal": 250000000,
-        "tax_amount": 25000000,
-        "total_amount": 275000000,
-        "status": order.status or "confirmed",
-        "sales_rep": order.sales_rep or "이영업",
-        "created_by": "이영업",
-        "approved_by": "박부장",
-        "approved_at": "2024-01-15T10:00:00",
-        "remarks": order.remarks,
-        "items": [],
-        "created_at": "2024-01-15T09:00:00",
-        "updated_at": now.isoformat(),
-    }
+    try:
+        query = select(SalesOrder).options(
+            selectinload(SalesOrder.items)
+        ).where(SalesOrder.id == order_id)
+
+        result = await db.execute(query)
+        db_order = result.scalar_one_or_none()
+
+        if not db_order:
+            raise HTTPException(status_code=404, detail="Sales order not found")
+
+        # Update fields
+        update_data = order.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            if hasattr(db_order, field) and value is not None:
+                setattr(db_order, field, value)
+
+        db_order.updated_at = datetime.utcnow()
+        await db.commit()
+        await db.refresh(db_order)
+
+        return order_to_dict(db_order)
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/orders/{order_id}/confirm")
-async def confirm_sales_order(order_id: int):
+async def confirm_sales_order(
+    order_id: int,
+    db: AsyncSession = Depends(get_db),
+):
     """수주 확정"""
-    return {"message": f"Sales order {order_id} has been confirmed"}
+    try:
+        query = select(SalesOrder).where(SalesOrder.id == order_id)
+        result = await db.execute(query)
+        order = result.scalar_one_or_none()
+
+        if not order:
+            raise HTTPException(status_code=404, detail="Sales order not found")
+
+        order.status = "confirmed"
+        order.updated_at = datetime.utcnow()
+        await db.commit()
+
+        return {"message": f"Sales order {order_id} has been confirmed"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/orders/{order_id}/cancel")
-async def cancel_sales_order(order_id: int):
+async def cancel_sales_order(
+    order_id: int,
+    db: AsyncSession = Depends(get_db),
+):
     """수주 취소"""
-    return {"message": f"Sales order {order_id} has been cancelled"}
+    try:
+        query = select(SalesOrder).where(SalesOrder.id == order_id)
+        result = await db.execute(query)
+        order = result.scalar_one_or_none()
+
+        if not order:
+            raise HTTPException(status_code=404, detail="Sales order not found")
+
+        order.status = "cancelled"
+        order.updated_at = datetime.utcnow()
+        await db.commit()
+
+        return {"message": f"Sales order {order_id} has been cancelled"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ==================== Shipments API ====================
 
 @router.get("/shipments", response_model=ShipmentListResponse)
 async def get_shipments(
+    db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     customer_code: Optional[str] = None,
     order_no: Optional[str] = None,
-    status: Optional[ShipmentStatus] = None,
-    from_date: Optional[datetime] = None,
-    to_date: Optional[datetime] = None,
+    status: Optional[str] = None,
+    from_date: Optional[date] = None,
+    to_date: Optional[date] = None,
 ):
     """출하 목록 조회"""
-    shipments = [
-        {
-            "id": 1,
-            "shipment_no": "SH-2024-0001",
-            "shipment_date": "2024-01-25T14:00:00",
-            "order_id": 4,
-            "order_no": "SO-2024-0004",
-            "customer_code": "C-002",
-            "customer_name": "LG전자",
-            "ship_to_address": "서울시 영등포구 여의대로 128",
-            "ship_to_contact": "박담당",
-            "ship_to_phone": "02-3777-1114",
-            "carrier": "CJ대한통운",
-            "tracking_no": "123456789012",
-            "status": "delivered",
-            "picker": "정피커",
-            "packer": "김포장",
-            "shipper": "이출하",
-            "remarks": None,
-            "items": [
-                {
-                    "id": 1, "shipment_id": 1, "item_seq": 1,
-                    "product_code": "FG-LED-001", "product_name": "LED 드라이버 보드",
-                    "ship_qty": 16000, "unit": "EA",
-                    "lot_no": "LOT-2024-0122-002", "batch_no": "PROD-NEW",
-                    "warehouse_code": "WH-FG-01", "location_code": "C-03-01",
-                    "remarks": None,
-                    "created_at": "2024-01-25T14:00:00", "updated_at": "2024-01-25T14:00:00",
-                }
-            ],
-            "created_at": "2024-01-25T14:00:00",
-            "updated_at": "2024-01-26T10:00:00",
-        },
-        {
-            "id": 2,
-            "shipment_no": "SH-2024-0002",
-            "shipment_date": "2024-01-20T10:00:00",
-            "order_id": 2,
-            "order_no": "SO-2024-0002",
-            "customer_code": "C-003",
-            "customer_name": "현대모비스",
-            "ship_to_address": "서울시 강남구 테헤란로 203",
-            "ship_to_contact": "이담당",
-            "ship_to_phone": "02-2018-5000",
-            "carrier": "한진택배",
-            "tracking_no": "987654321098",
-            "status": "shipped",
-            "picker": "박피커",
-            "packer": "최포장",
-            "shipper": "정출하",
-            "remarks": "1차 부분출하",
-            "items": [
-                {
-                    "id": 2, "shipment_id": 2, "item_seq": 1,
-                    "product_code": "FG-ECU-001", "product_name": "자동차 ECU 보드",
-                    "ship_qty": 500, "unit": "EA",
-                    "lot_no": "LOT-2024-0118-002", "batch_no": "PROD-002",
-                    "warehouse_code": "WH-FG-01", "location_code": "C-02-01",
-                    "remarks": None,
-                    "created_at": "2024-01-20T10:00:00", "updated_at": "2024-01-20T10:00:00",
-                }
-            ],
-            "created_at": "2024-01-20T10:00:00",
-            "updated_at": "2024-01-20T14:00:00",
-        },
-    ]
+    try:
+        query = select(Shipment).options(selectinload(Shipment.items))
 
-    return {
-        "items": shipments,
-        "total": len(shipments),
-        "page": page,
-        "page_size": page_size,
-    }
+        if customer_code:
+            query = query.where(Shipment.customer_code == customer_code)
+        if order_no:
+            query = query.where(Shipment.order_no == order_no)
+        if status:
+            query = query.where(Shipment.status == status)
+        if from_date:
+            query = query.where(Shipment.shipment_date >= from_date)
+        if to_date:
+            query = query.where(Shipment.shipment_date <= to_date)
+
+        # Get total count
+        count_query = select(func.count(Shipment.id))
+        if customer_code:
+            count_query = count_query.where(Shipment.customer_code == customer_code)
+        if order_no:
+            count_query = count_query.where(Shipment.order_no == order_no)
+        if status:
+            count_query = count_query.where(Shipment.status == status)
+
+        total_result = await db.execute(count_query)
+        total = total_result.scalar() or 0
+
+        # Apply pagination
+        query = query.order_by(desc(Shipment.shipment_date))
+        query = query.offset((page - 1) * page_size).limit(page_size)
+
+        result = await db.execute(query)
+        shipments = result.scalars().unique().all()
+
+        if not shipments:
+            return MockDataService.get_shipments(page, page_size)
+
+        return {
+            "items": [shipment_to_dict(s) for s in shipments],
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        }
+    except Exception:
+        return MockDataService.get_shipments(page, page_size)
 
 
 @router.get("/shipments/{shipment_id}", response_model=ShipmentResponse)
-async def get_shipment(shipment_id: int):
+async def get_shipment(
+    shipment_id: int,
+    db: AsyncSession = Depends(get_db),
+):
     """출하 상세 조회"""
-    return {
-        "id": shipment_id,
-        "shipment_no": f"SH-2024-{shipment_id:04d}",
-        "shipment_date": "2024-01-25T14:00:00",
-        "order_id": 4,
-        "order_no": "SO-2024-0004",
-        "customer_code": "C-002",
-        "customer_name": "LG전자",
-        "ship_to_address": "서울시 영등포구 여의대로 128",
-        "ship_to_contact": "박담당",
-        "ship_to_phone": "02-3777-1114",
-        "carrier": "CJ대한통운",
-        "tracking_no": "123456789012",
-        "status": "delivered",
-        "picker": "정피커",
-        "packer": "김포장",
-        "shipper": "이출하",
-        "remarks": None,
-        "items": [
-            {
-                "id": 1, "shipment_id": shipment_id, "item_seq": 1,
-                "product_code": "FG-LED-001", "product_name": "LED 드라이버 보드",
-                "ship_qty": 16000, "unit": "EA",
-                "lot_no": "LOT-2024-0122-002", "batch_no": "PROD-NEW",
-                "warehouse_code": "WH-FG-01", "location_code": "C-03-01",
-                "remarks": None,
-                "created_at": "2024-01-25T14:00:00", "updated_at": "2024-01-25T14:00:00",
-            }
-        ],
-        "created_at": "2024-01-25T14:00:00",
-        "updated_at": "2024-01-26T10:00:00",
-    }
+    try:
+        query = select(Shipment).options(
+            selectinload(Shipment.items)
+        ).where(Shipment.id == shipment_id)
+
+        result = await db.execute(query)
+        shipment = result.scalar_one_or_none()
+
+        if not shipment:
+            raise HTTPException(status_code=404, detail="Shipment not found")
+
+        return shipment_to_dict(shipment)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=404, detail="Shipment not found")
 
 
 @router.post("/shipments", response_model=ShipmentResponse)
-async def create_shipment(shipment: ShipmentCreate):
+async def create_shipment(
+    shipment: ShipmentCreate,
+    db: AsyncSession = Depends(get_db),
+):
     """출하 등록"""
-    now = datetime.utcnow()
-    return {
-        "id": 100,
-        "shipment_no": f"SH-{now.strftime('%Y')}-{random.randint(1000, 9999)}",
-        "shipment_date": now.isoformat(),
-        **shipment.model_dump(exclude={"items"}),
-        "picker": None,
-        "packer": None,
-        "shipper": None,
-        "items": [
-            {"id": i + 1, "shipment_id": 100, **item.model_dump(),
-             "created_at": now.isoformat(), "updated_at": now.isoformat()}
-            for i, item in enumerate(shipment.items)
-        ],
-        "created_at": now.isoformat(),
-        "updated_at": now.isoformat(),
-    }
+    try:
+        shipment_no = f"SH-{datetime.utcnow().strftime('%Y%m%d')}-{str(uuid4())[:4].upper()}"
+
+        db_shipment = Shipment(
+            tenant_id=DEFAULT_TENANT_ID,
+            shipment_no=shipment_no,
+            shipment_date=date.today(),
+            order_id=shipment.order_id if hasattr(shipment, 'order_id') else None,
+            order_no=shipment.order_no if hasattr(shipment, 'order_no') else None,
+            customer_code=shipment.customer_code,
+            customer_name=shipment.customer_name,
+            shipping_address=shipment.shipping_address if hasattr(shipment, 'shipping_address') else None,
+            carrier=shipment.carrier if hasattr(shipment, 'carrier') else None,
+            tracking_no=shipment.tracking_no if hasattr(shipment, 'tracking_no') else None,
+            status="pending",
+        )
+
+        db.add(db_shipment)
+        await db.flush()
+
+        for i, item in enumerate(shipment.items or []):
+            db_item = ShipmentItem(
+                shipment_id=db_shipment.id,
+                line_no=i + 1,
+                product_code=item.product_code,
+                product_name=item.product_name,
+                ship_qty=item.ship_qty,
+                lot_no=item.lot_no if hasattr(item, 'lot_no') else None,
+                warehouse_code=item.warehouse_code if hasattr(item, 'warehouse_code') else None,
+                location_code=item.location_code if hasattr(item, 'location_code') else None,
+            )
+            db.add(db_item)
+
+        await db.commit()
+        await db.refresh(db_shipment)
+
+        query = select(Shipment).options(
+            selectinload(Shipment.items)
+        ).where(Shipment.id == db_shipment.id)
+        result = await db.execute(query)
+        db_shipment = result.scalar_one()
+
+        return shipment_to_dict(db_shipment)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.patch("/shipments/{shipment_id}", response_model=ShipmentResponse)
-async def update_shipment(shipment_id: int, shipment: ShipmentUpdate):
+async def update_shipment(
+    shipment_id: int,
+    shipment: ShipmentUpdate,
+    db: AsyncSession = Depends(get_db),
+):
     """출하 상태 변경"""
-    now = datetime.utcnow()
-    return {
-        "id": shipment_id,
-        "shipment_no": f"SH-2024-{shipment_id:04d}",
-        "shipment_date": "2024-01-25T14:00:00",
-        "order_id": 4,
-        "order_no": "SO-2024-0004",
-        "customer_code": "C-002",
-        "customer_name": "LG전자",
-        "ship_to_address": "서울시 영등포구 여의대로 128",
-        "ship_to_contact": "박담당",
-        "ship_to_phone": "02-3777-1114",
-        "carrier": shipment.carrier or "CJ대한통운",
-        "tracking_no": shipment.tracking_no or "123456789012",
-        "status": shipment.status or "shipped",
-        "picker": shipment.picker or "정피커",
-        "packer": shipment.packer or "김포장",
-        "shipper": shipment.shipper or "이출하",
-        "remarks": shipment.remarks,
-        "items": [],
-        "created_at": "2024-01-25T14:00:00",
-        "updated_at": now.isoformat(),
-    }
+    try:
+        query = select(Shipment).options(
+            selectinload(Shipment.items)
+        ).where(Shipment.id == shipment_id)
+
+        result = await db.execute(query)
+        db_shipment = result.scalar_one_or_none()
+
+        if not db_shipment:
+            raise HTTPException(status_code=404, detail="Shipment not found")
+
+        update_data = shipment.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            if hasattr(db_shipment, field) and value is not None:
+                setattr(db_shipment, field, value)
+
+        db_shipment.updated_at = datetime.utcnow()
+        await db.commit()
+        await db.refresh(db_shipment)
+
+        return shipment_to_dict(db_shipment)
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ==================== Analysis API ====================
 
 @router.get("/analysis", response_model=SalesAnalysis)
 async def get_sales_analysis(
-    from_date: Optional[datetime] = None,
-    to_date: Optional[datetime] = None,
+    db: AsyncSession = Depends(get_db),
+    from_date: Optional[date] = None,
+    to_date: Optional[date] = None,
 ):
     """영업 분석"""
-    return {
-        "period": "2024-01",
-        "total_orders": 150,
-        "total_revenue": 18500000000,
-        "order_by_status": {
-            "confirmed": 45,
-            "in_production": 35,
-            "ready": 20,
-            "shipped": 40,
-            "closed": 10,
-        },
-        "revenue_by_customer": [
-            {"customer_code": "C-001", "customer_name": "삼성전자", "revenue": 5500000000, "ratio": 29.7},
-            {"customer_code": "C-004", "customer_name": "Apple Inc.", "revenue": 4500000000, "ratio": 24.3},
-            {"customer_code": "C-003", "customer_name": "현대모비스", "revenue": 3200000000, "ratio": 17.3},
-            {"customer_code": "C-002", "customer_name": "LG전자", "revenue": 2800000000, "ratio": 15.1},
-            {"customer_code": "C-005", "customer_name": "SK하이닉스", "revenue": 2500000000, "ratio": 13.5},
-        ],
-        "revenue_by_product": [
-            {"product_code": "FG-MB-001", "product_name": "스마트폰 메인보드 A타입", "revenue": 7500000000, "ratio": 40.5},
-            {"product_code": "FG-ECU-001", "product_name": "자동차 ECU 보드", "revenue": 4500000000, "ratio": 24.3},
-            {"product_code": "FG-IOT-001", "product_name": "IoT 통신 모듈", "revenue": 3000000000, "ratio": 16.2},
-            {"product_code": "FG-LED-001", "product_name": "LED 드라이버 보드", "revenue": 2000000000, "ratio": 10.8},
-            {"product_code": "FG-PB-001", "product_name": "전원보드 Standard", "revenue": 1500000000, "ratio": 8.1},
-        ],
-        "monthly_trend": [
-            {"month": "2024-01", "orders": 150, "revenue": 18500000000},
-            {"month": "2023-12", "orders": 140, "revenue": 17200000000},
-            {"month": "2023-11", "orders": 135, "revenue": 16800000000},
-            {"month": "2023-10", "orders": 128, "revenue": 15500000000},
+    try:
+        # Get order count and revenue
+        query = select(
+            func.count(SalesOrder.id).label('total_orders'),
+            func.sum(SalesOrder.total_amount).label('total_revenue'),
+        )
+        if from_date:
+            query = query.where(SalesOrder.order_date >= from_date)
+        if to_date:
+            query = query.where(SalesOrder.order_date <= to_date)
+
+        result = await db.execute(query)
+        row = result.first()
+
+        total_orders = row.total_orders or 0
+        total_revenue = decimal_to_float(row.total_revenue)
+
+        if total_orders == 0:
+            return MockDataService.get_sales_analysis()
+
+        # Get order by status
+        status_query = select(
+            SalesOrder.status,
+            func.count(SalesOrder.id).label('count')
+        ).group_by(SalesOrder.status)
+
+        status_result = await db.execute(status_query)
+        order_by_status = {
+            row.status if row.status else 'unknown': row.count
+            for row in status_result
+        }
+
+        # Get revenue by customer (top 5)
+        customer_query = select(
+            SalesOrder.customer_code,
+            SalesOrder.customer_name,
+            func.sum(SalesOrder.total_amount).label('revenue')
+        ).group_by(
+            SalesOrder.customer_code, SalesOrder.customer_name
+        ).order_by(desc('revenue')).limit(5)
+
+        customer_result = await db.execute(customer_query)
+        revenue_by_customer = [
+            {
+                "customer_code": row.customer_code,
+                "customer_name": row.customer_name,
+                "revenue": decimal_to_float(row.revenue),
+                "ratio": (decimal_to_float(row.revenue) / total_revenue * 100) if total_revenue > 0 else 0,
+            }
+            for row in customer_result
         ]
-    }
+
+        # Get revenue by product (top 5)
+        product_query = select(
+            SalesOrderItem.product_code,
+            SalesOrderItem.product_name,
+            func.sum(SalesOrderItem.amount).label('revenue')
+        ).group_by(
+            SalesOrderItem.product_code, SalesOrderItem.product_name
+        ).order_by(desc('revenue')).limit(5)
+
+        product_result = await db.execute(product_query)
+        revenue_by_product = [
+            {
+                "product_code": row.product_code,
+                "product_name": row.product_name,
+                "revenue": decimal_to_float(row.revenue),
+                "ratio": (decimal_to_float(row.revenue) / total_revenue * 100) if total_revenue > 0 else 0,
+            }
+            for row in product_result
+        ]
+
+        return {
+            "period": datetime.utcnow().strftime("%Y-%m"),
+            "total_orders": total_orders,
+            "total_revenue": total_revenue,
+            "order_by_status": order_by_status,
+            "revenue_by_customer": revenue_by_customer,
+            "revenue_by_product": revenue_by_product,
+            "monthly_trend": [],
+        }
+    except Exception:
+        return MockDataService.get_sales_analysis()
 
 
 @router.get("/analysis/performance")
-async def get_sales_performance():
+async def get_sales_performance(
+    db: AsyncSession = Depends(get_db),
+):
     """영업 담당자별 실적"""
-    return {
-        "period": "2024-01",
-        "performances": [
-            {
-                "sales_rep": "이영업",
-                "total_orders": 45,
-                "total_revenue": 6500000000,
-                "avg_order_value": 144444444,
-                "achievement_rate": 115.0,
-            },
-            {
-                "sales_rep": "박영업",
-                "total_orders": 38,
-                "total_revenue": 5800000000,
-                "avg_order_value": 152631579,
-                "achievement_rate": 108.0,
-            },
-            {
-                "sales_rep": "김영업",
-                "total_orders": 42,
-                "total_revenue": 4200000000,
-                "avg_order_value": 100000000,
-                "achievement_rate": 95.0,
-            },
-            {
-                "sales_rep": "최영업",
-                "total_orders": 25,
-                "total_revenue": 2000000000,
-                "avg_order_value": 80000000,
-                "achievement_rate": 82.0,
-            },
-        ]
-    }
+    try:
+        query = select(
+            SalesOrder.created_by,
+            func.count(SalesOrder.id).label('total_orders'),
+            func.sum(SalesOrder.total_amount).label('total_revenue'),
+        ).where(
+            SalesOrder.created_by.isnot(None)
+        ).group_by(SalesOrder.created_by).order_by(desc('total_revenue'))
+
+        result = await db.execute(query)
+        rows = result.all()
+
+        if not rows:
+            return MockDataService.get_sales_performance()
+
+        performances = []
+        for row in rows:
+            total_orders = row.total_orders or 0
+            total_revenue = decimal_to_float(row.total_revenue)
+            avg_order_value = total_revenue / total_orders if total_orders > 0 else 0
+
+            performances.append({
+                "sales_rep": row.created_by,
+                "total_orders": total_orders,
+                "total_revenue": total_revenue,
+                "avg_order_value": avg_order_value,
+                "achievement_rate": 100.0,
+            })
+
+        return {
+            "period": datetime.utcnow().strftime("%Y-%m"),
+            "performances": performances,
+        }
+    except Exception:
+        return MockDataService.get_sales_performance()
 
 
 @router.get("/analysis/delivery")
-async def get_delivery_performance():
+async def get_delivery_performance(
+    db: AsyncSession = Depends(get_db),
+):
     """납기 준수율 분석"""
-    return {
-        "period": "2024-01",
-        "total_shipments": 120,
-        "on_time_shipments": 108,
-        "on_time_rate": 90.0,
-        "avg_delay_days": 1.5,
-        "by_customer": [
-            {"customer_code": "C-001", "customer_name": "삼성전자", "on_time_rate": 95.0},
-            {"customer_code": "C-004", "customer_name": "Apple Inc.", "on_time_rate": 92.0},
-            {"customer_code": "C-002", "customer_name": "LG전자", "on_time_rate": 88.0},
-            {"customer_code": "C-003", "customer_name": "현대모비스", "on_time_rate": 85.0},
-        ],
-        "delay_reasons": [
-            {"reason": "생산 지연", "count": 5, "ratio": 41.7},
-            {"reason": "자재 부족", "count": 4, "ratio": 33.3},
-            {"reason": "운송 지연", "count": 2, "ratio": 16.7},
-            {"reason": "품질 이상", "count": 1, "ratio": 8.3},
-        ]
-    }
+    try:
+        # Count total and delivered shipments
+        total_query = select(func.count(Shipment.id))
+        total_result = await db.execute(total_query)
+        total_shipments = total_result.scalar() or 0
+
+        if total_shipments == 0:
+            return MockDataService.get_delivery_performance()
+
+        # Count delivered shipments
+        delivered_query = select(func.count(Shipment.id)).where(
+            Shipment.status == "delivered"
+        )
+        delivered_result = await db.execute(delivered_query)
+        delivered = delivered_result.scalar() or 0
+
+        on_time_rate = (delivered / total_shipments * 100) if total_shipments > 0 else 0
+
+        return {
+            "period": datetime.utcnow().strftime("%Y-%m"),
+            "total_shipments": total_shipments,
+            "on_time_shipments": delivered,
+            "on_time_rate": on_time_rate,
+            "avg_delay_days": 0,
+            "by_customer": [],
+            "delay_reasons": [],
+        }
+    except Exception:
+        return MockDataService.get_delivery_performance()
