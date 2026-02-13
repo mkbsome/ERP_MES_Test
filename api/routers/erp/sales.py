@@ -179,6 +179,8 @@ async def get_sales_orders(
             "page": page,
             "page_size": page_size,
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"수주 목록 조회 실패: {str(e)}")
 
 
 @router.get("/orders/{order_id}", response_model=SalesOrderResponse)
@@ -408,6 +410,8 @@ async def get_shipments(
             "page": page,
             "page_size": page_size,
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"출하 목록 조회 실패: {str(e)}")
 
 
 @router.get("/shipments/{shipment_id}", response_model=ShipmentResponse)
@@ -621,6 +625,8 @@ async def get_sales_analysis(
             "revenue_by_product": revenue_by_product,
             "monthly_trend": [],
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"영업 분석 조회 실패: {str(e)}")
 
 
 @router.get("/analysis/performance")
@@ -664,6 +670,8 @@ async def get_sales_performance(
             "period": datetime.utcnow().strftime("%Y-%m"),
             "performances": performances,
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"영업 실적 조회 실패: {str(e)}")
 
 
 @router.get("/analysis/delivery")
@@ -706,6 +714,8 @@ async def get_delivery_performance(
             "by_customer": [],
             "delay_reasons": [],
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"납기 준수율 분석 실패: {str(e)}")
 
 
 # ==================== Additional APIs (프론트엔드 호환) ====================

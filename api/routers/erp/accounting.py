@@ -237,6 +237,9 @@ async def get_account_tree(
         return AccountCodeTreeResponse(
             items=[AccountCodeResponse(**account_to_dict(a, True)) for a in accounts]
         )
+    except Exception as e:
+        print(f"Error fetching account tree: {e}")
+        raise HTTPException(status_code=500, detail=f"계정과목 트리 조회 실패: {str(e)}")
 
 
 @router.get("/accounts/{account_code}", response_model=AccountCodeResponse, summary="계정과목 상세 조회")
@@ -373,6 +376,8 @@ async def get_vouchers(
             total_debit=Decimal(str(sums[0])) if sums else Decimal("0"),
             total_credit=Decimal(str(sums[1])) if sums else Decimal("0")
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"전표 목록 조회 실패: {str(e)}")
 
 
 @router.get("/vouchers/{voucher_no}", response_model=VoucherResponse, summary="전표 상세 조회")
@@ -661,6 +666,8 @@ async def get_general_ledger(
             total=len(items),
             summary={"total_debit": total_debit, "total_credit": total_credit}
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"총계정원장 조회 실패: {str(e)}")
 
 
 @router.get("/ledger/general/{account_code}/transactions", response_model=LedgerTransactionListResponse, summary="계정별 거래 내역")
@@ -803,6 +810,8 @@ async def get_cost_centers(
         cost_centers = result.scalars().all()
 
         return [CostCenterResponse(**cost_center_to_dict(cc)) for cc in cost_centers]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"코스트센터 목록 조회 실패: {str(e)}")
 
 
 @router.get("/cost/products", response_model=List[ProductCostSummary], summary="품목별 원가 조회")
@@ -870,6 +879,8 @@ async def get_product_costs(
                 pc["variance_rate"] = (pc["total_variance"] / pc["total_standard_cost"]) * 100
 
         return [ProductCostSummary(**pc) for pc in product_costs.values()]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"품목별 원가 조회 실패: {str(e)}")
 
 
 @router.get("/cost/analysis", response_model=CostAnalysisResponse, summary="원가 분석")
@@ -1028,6 +1039,8 @@ async def get_fiscal_periods(
             items=items,
             current_period=current
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"회계기간 목록 조회 실패: {str(e)}")
 
 
 @router.post("/fiscal-periods/{fiscal_year}/{fiscal_period}/close", summary="회계기간 마감")

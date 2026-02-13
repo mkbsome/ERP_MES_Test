@@ -309,6 +309,9 @@ async def get_bom_list(
             page=page,
             page_size=page_size,
         )
+    except Exception as e:
+        print(f"Error fetching BOM list: {e}")
+        raise HTTPException(status_code=500, detail=f"BOM 목록 조회 실패: {str(e)}")
 
 
 @router.get("/bom/{bom_id}", response_model=BOMResponse)
@@ -453,6 +456,9 @@ async def get_routing_list(
             page=page,
             page_size=page_size,
         )
+    except Exception as e:
+        print(f"Error fetching routing list: {e}")
+        raise HTTPException(status_code=500, detail=f"Routing 목록 조회 실패: {str(e)}")
 
 
 @router.get("/routing/{routing_id}", response_model=RoutingResponse)
@@ -524,6 +530,9 @@ async def get_work_orders(
             page=page,
             page_size=page_size,
         )
+    except Exception as e:
+        print(f"Error fetching work orders: {e}")
+        raise HTTPException(status_code=500, detail=f"작업지시 목록 조회 실패: {str(e)}")
 
 
 @router.post("/work-orders", response_model=WorkOrderResponse)

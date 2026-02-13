@@ -154,6 +154,8 @@ async def get_departments(
             "items": [department_to_dict(d) for d in departments],
             "total": len(departments)
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"부서 목록 조회 실패: {str(e)}")
 
 
 @router.get("/departments/{department_code}", summary="부서 상세 조회")
@@ -177,6 +179,10 @@ async def get_department(
             raise HTTPException(status_code=404, detail=f"Department {department_code} not found")
 
         return department_to_dict(dept)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"부서 조회 실패: {str(e)}")
 
 
 # ============== 직위 관리 ==============
@@ -202,6 +208,8 @@ async def get_positions(
             "items": [position_to_dict(p) for p in positions],
             "total": len(positions)
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"직위 목록 조회 실패: {str(e)}")
 
 
 # ============== 사원 관리 ==============
@@ -251,6 +259,8 @@ async def get_employees(
             "page": page,
             "size": size
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"사원 목록 조회 실패: {str(e)}")
 
 
 @router.get("/employees/summary", summary="사원 현황 요약")
@@ -306,6 +316,8 @@ async def get_employee_summary(
             "by_employment_type": [],
             "avg_years_of_service": 0.0
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"사원 현황 요약 조회 실패: {str(e)}")
 
 
 @router.get("/employees/{employee_id}", summary="사원 상세 조회")
@@ -329,6 +341,10 @@ async def get_employee(
             raise HTTPException(status_code=404, detail=f"Employee {employee_id} not found")
 
         return employee_to_dict(emp)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"사원 조회 실패: {str(e)}")
 
 
 # ============== 근태 관리 ==============
@@ -375,6 +391,8 @@ async def get_attendance_records(
             "page": page,
             "size": size
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"근태 기록 조회 실패: {str(e)}")
 
 
 @router.get("/attendance/daily-summary", summary="일별 근태 현황")
@@ -439,6 +457,8 @@ async def get_daily_attendance_summary(
             "on_leave_count": on_leave,
             "attendance_rate": round(attendance_rate, 1)
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"일별 근태 현황 조회 실패: {str(e)}")
 
 
 @router.get("/attendance/summary/{employee_id}", summary="사원별 근태 요약")
@@ -483,6 +503,8 @@ async def get_attendance_summary(
             "late_count": late_count,
             "absent_count": absent_count
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"사원별 근태 요약 조회 실패: {str(e)}")
 
 
 # ============== 급여 관리 ==============
@@ -529,6 +551,8 @@ async def get_payroll_list(
             "page": page,
             "size": size
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"급여 목록 조회 실패: {str(e)}")
 
 
 @router.get("/payroll/{payroll_no}", summary="급여 상세 조회")
@@ -552,6 +576,10 @@ async def get_payroll_detail(
             raise HTTPException(status_code=404, detail=f"Payroll {payroll_no} not found")
 
         return payroll_to_dict(payroll)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"급여 상세 조회 실패: {str(e)}")
 
 
 @router.get("/payroll/summary", summary="급여 요약")
@@ -586,6 +614,8 @@ async def get_payroll_summary(
             "total_net": total_net,
             "by_department": []
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"급여 요약 조회 실패: {str(e)}")
 
 
 # ============== 대시보드 ==============
@@ -614,3 +644,5 @@ async def get_hr_dashboard(
                 "production_ratio": 51.4
             }
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"인사 대시보드 조회 실패: {str(e)}")
