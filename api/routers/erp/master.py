@@ -22,6 +22,7 @@ from api.models.erp.master import (
     ProductMaster, CustomerMaster, VendorMaster,
     BOMHeader, BOMDetail, RoutingHeader, RoutingOperation,
 )
+from api.models.erp.inventory import Warehouse
 
 router = APIRouter(prefix="/master", tags=["ERP Master Data"])
 
@@ -528,4 +529,60 @@ async def get_master_data_summary(db: AsyncSession = Depends(get_db)):
         "active_vendors": active_vendors.scalar() or 0,
         "total_boms": total_boms.scalar() or 0,
         "total_routings": total_routings.scalar() or 0,
+    }
+
+
+# ==================== Warehouses API (프론트엔드 호환) ====================
+
+def warehouse_to_dict(wh: Warehouse) -> dict:
+    return {
+        "id": wh.id,
+        "warehouse_code": wh.warehouse_code,
+        "warehouse_name": wh.warehouse_name,
+        "warehouse_type": wh.warehouse_type,
+        "location": wh.location,
+        "is_active": wh.is_active,
+        "created_at": wh.created_at.isoformat() if wh.created_at else None,
+        "updated_at": wh.updated_at.isoformat() if wh.updated_at else None,
+    }
+
+
+@router.get("/warehouses")
+async def get_warehouses(
+    db: AsyncSession = Depends(get_db),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100, alias="page_size"),
+    warehouse_type: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    search: Optional[str] = None,
+):
+    """창고 목록 조회 - 프론트엔드 호환"""
+    query = select(Warehouse).where(Warehouse.tenant_id == DEFAULT_TENANT_ID)
+
+    if warehouse_type:
+        query = query.where(Warehouse.warehouse_type == warehouse_type)
+    if is_active is not None:
+        query = query.where(Warehouse.is_active == is_active)
+    if search:
+        query = query.where(
+            or_(
+                Warehouse.warehouse_code.ilike(f"%{search}%"),
+                Warehouse.warehouse_name.ilike(f"%{search}%"),
+            )
+        )
+
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+
+    offset = (page - 1) * size
+    query = query.order_by(Warehouse.id.desc()).offset(offset).limit(size)
+    result = await db.execute(query)
+    warehouses = result.scalars().all()
+
+    return {
+        "items": [warehouse_to_dict(w) for w in warehouses],
+        "total": total,
+        "page": page,
+        "page_size": size,
     }

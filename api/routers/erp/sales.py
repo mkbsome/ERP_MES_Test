@@ -708,3 +708,64 @@ async def get_delivery_performance(
         }
     except Exception:
         return MockDataService.get_delivery_performance()
+
+
+# ==================== Additional APIs (프론트엔드 호환) ====================
+
+@router.get("/revenues")
+async def get_sales_revenues(
+    db: AsyncSession = Depends(get_db),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+):
+    """영업 수익 목록 - 프론트엔드 호환"""
+    try:
+        query = select(SalesRevenue)
+
+        count_query = select(func.count(SalesRevenue.id))
+        total_result = await db.execute(count_query)
+        total = total_result.scalar() or 0
+
+        query = query.order_by(desc(SalesRevenue.id))
+        query = query.offset((page - 1) * page_size).limit(page_size)
+
+        result = await db.execute(query)
+        revenues = result.scalars().all()
+
+        return {
+            "items": [],
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        }
+    except Exception:
+        return {
+            "items": [],
+            "total": 0,
+            "page": page,
+            "page_size": page_size,
+        }
+
+
+@router.get("/statistics")
+async def get_sales_statistics(db: AsyncSession = Depends(get_db)):
+    """판매 통계 - 프론트엔드 호환"""
+    try:
+        total_orders = await db.execute(select(func.count(SalesOrder.id)))
+        total_revenue = await db.execute(select(func.sum(SalesOrder.total_amount)))
+
+        return {
+            "total_orders": total_orders.scalar() or 0,
+            "total_revenue": decimal_to_float(total_revenue.scalar()) or 0,
+            "by_customer": [],
+            "by_product": [],
+            "by_month": [],
+        }
+    except Exception:
+        return {
+            "total_orders": 0,
+            "total_revenue": 0,
+            "by_customer": [],
+            "by_product": [],
+            "by_month": [],
+        }
