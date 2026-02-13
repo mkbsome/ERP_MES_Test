@@ -46,14 +46,16 @@ def warehouse_to_dict(wh: Warehouse) -> dict:
 def stock_to_dict(s: InventoryStock) -> dict:
     return {
         "id": s.id,
-        "product_code": s.product_code,
+        "item_code": s.item_code,
+        "item_name": s.item_name,
         "warehouse_code": s.warehouse_code,
+        "location_code": s.location_code,
+        "lot_no": s.lot_no,
         "quantity": decimal_to_float(s.quantity),
         "reserved_qty": decimal_to_float(s.reserved_qty),
-        "available_qty": decimal_to_float(s.available_qty),
-        "uom": s.uom,
-        "lot_no": s.lot_no,
+        "unit_cost": decimal_to_float(s.unit_cost),
         "status": s.status,
+        "last_movement_date": s.last_movement_date.isoformat() if s.last_movement_date else None,
         "created_at": s.created_at.isoformat() if s.created_at else None,
         "updated_at": s.updated_at.isoformat() if s.updated_at else None,
     }
@@ -165,7 +167,8 @@ async def get_stocks(
         if search:
             query = query.where(
                 or_(
-                    InventoryStock.product_code.ilike(f"%{search}%"),
+                    InventoryStock.item_code.ilike(f"%{search}%"),
+                    InventoryStock.item_name.ilike(f"%{search}%"),
                 )
             )
 
@@ -198,15 +201,15 @@ async def get_stock(
     db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100, alias="page_size"),
-    product_code: Optional[str] = None,
+    item_code: Optional[str] = None,
     warehouse_code: Optional[str] = None,
 ):
     """재고 현황 조회 - erp_inventory_stock 테이블이 없으면 빈 결과 반환"""
     try:
         query = select(InventoryStock).where(InventoryStock.tenant_id == DEFAULT_TENANT_ID)
 
-        if product_code:
-            query = query.where(InventoryStock.product_code == product_code)
+        if item_code:
+            query = query.where(InventoryStock.item_code == item_code)
         if warehouse_code:
             query = query.where(InventoryStock.warehouse_code == warehouse_code)
 
@@ -244,15 +247,15 @@ async def get_transactions(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100, alias="page_size"),
     transaction_type: Optional[str] = None,
-    product_code: Optional[str] = None,
+    item_code: Optional[str] = None,
 ):
     """재고 이동 이력 조회"""
     query = select(InventoryTransaction).where(InventoryTransaction.tenant_id == DEFAULT_TENANT_ID)
 
     if transaction_type:
         query = query.where(InventoryTransaction.transaction_type == transaction_type)
-    if product_code:
-        query = query.where(InventoryTransaction.product_code == product_code)
+    if item_code:
+        query = query.where(InventoryTransaction.item_code == item_code)
 
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)

@@ -75,20 +75,24 @@ class Warehouse(Base):
 
 
 class InventoryStock(Base):
-    """재고 현황 - 실제 DB: erp_inventory_stock (존재하지 않을 수 있음)"""
+    """재고 현황 - 실제 DB: erp_inventory_stock"""
     __tablename__ = "erp_inventory_stock"
     __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(PGUUID(as_uuid=True), nullable=False)
-    product_code = Column(String(50), nullable=False, index=True)
+    item_code = Column(String(50), nullable=False, index=True)
+    item_name = Column(String(200))
     warehouse_code = Column(String(50), nullable=False, index=True)
-    quantity = Column(Numeric(15, 2), default=0)
-    reserved_qty = Column(Numeric(15, 2), default=0)
-    available_qty = Column(Numeric(15, 2), default=0)
-    uom = Column(String(20), default="EA")
-    lot_no = Column(String(100))
-    status = Column(String(20))
+    location_code = Column(String(50))
+    lot_no = Column(String(50))
+    quantity = Column(Numeric(12, 3), default=0)
+    reserved_qty = Column(Numeric(12, 3), default=0)
+    # available_qty는 DB에서 generated column이므로 여기서 정의하지 않음
+    unit_cost = Column(Numeric(15, 2), default=0)
+    # total_value는 DB에서 generated column이므로 여기서 정의하지 않음
+    status = Column(String(20), default='available')
+    last_movement_date = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True))
 

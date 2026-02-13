@@ -389,9 +389,11 @@ CREATE TABLE erp_inventory_stock (
     status VARCHAR(20) DEFAULT 'available' CHECK (status IN ('available', 'reserved', 'quarantine', 'damaged')),
     last_movement_date TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(tenant_id, item_code, warehouse_code, COALESCE(lot_no, ''))
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+-- 함수 표현식을 포함한 UNIQUE INDEX (UNIQUE 제약조건 대신)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_erp_inventory_stock_unique
+ON erp_inventory_stock(tenant_id, item_code, warehouse_code, COALESCE(lot_no, ''));
 
 -- 5.2 재고 이동 이력
 CREATE TABLE erp_inventory_transaction (
@@ -590,9 +592,11 @@ CREATE TABLE erp_standard_cost (
     expiry_date DATE,
     status VARCHAR(20) DEFAULT 'active',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(tenant_id, product_code, fiscal_year, COALESCE(fiscal_period, 0))
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+-- 함수 표현식을 포함한 UNIQUE INDEX
+CREATE UNIQUE INDEX IF NOT EXISTS idx_erp_standard_cost_unique
+ON erp_standard_cost(tenant_id, product_code, fiscal_year, COALESCE(fiscal_period, 0));
 
 -- 7.4 실제원가
 CREATE TABLE erp_actual_cost (
@@ -1362,9 +1366,11 @@ CREATE TABLE mes_equipment_oee (
     performance NUMERIC(5,2),
     quality NUMERIC(5,2),
     oee NUMERIC(5,2),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(tenant_id, equipment_code, oee_date, COALESCE(shift, ''))
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+-- 함수 표현식을 포함한 UNIQUE INDEX
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mes_oee_record_unique
+ON mes_oee_record(tenant_id, equipment_code, oee_date, COALESCE(shift, ''));
 
 -- 14.3 비가동 이벤트
 CREATE TABLE mes_downtime_event (
@@ -1483,9 +1489,11 @@ CREATE TABLE mes_material_inventory (
     min_qty NUMERIC(12,3) DEFAULT 0,
     max_qty NUMERIC(12,3),
     last_updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(tenant_id, location_code, material_code, COALESCE(lot_no, ''))
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+-- 함수 표현식을 포함한 UNIQUE INDEX
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mes_line_inventory_unique
+ON mes_line_inventory(tenant_id, location_code, material_code, COALESCE(lot_no, ''));
 
 -- ============================================================
 -- PART 16: 시스템 관리 (System)
