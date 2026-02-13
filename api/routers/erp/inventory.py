@@ -156,44 +156,36 @@ async def get_stocks(
     status: Optional[str] = None,
     search: Optional[str] = None,
 ):
-    """재고 현황 조회 - 프론트엔드 호환"""
-    try:
-        query = select(InventoryStock).where(InventoryStock.tenant_id == DEFAULT_TENANT_ID)
+    """재고 현황 조회"""
+    query = select(InventoryStock).where(InventoryStock.tenant_id == DEFAULT_TENANT_ID)
 
-        if warehouse_code:
-            query = query.where(InventoryStock.warehouse_code == warehouse_code)
-        if status:
-            query = query.where(InventoryStock.status == status)
-        if search:
-            query = query.where(
-                or_(
-                    InventoryStock.item_code.ilike(f"%{search}%"),
-                    InventoryStock.item_name.ilike(f"%{search}%"),
-                )
+    if warehouse_code:
+        query = query.where(InventoryStock.warehouse_code == warehouse_code)
+    if status:
+        query = query.where(InventoryStock.status == status)
+    if search:
+        query = query.where(
+            or_(
+                InventoryStock.item_code.ilike(f"%{search}%"),
+                InventoryStock.item_name.ilike(f"%{search}%"),
             )
+        )
 
-        count_query = select(func.count()).select_from(query.subquery())
-        total_result = await db.execute(count_query)
-        total = total_result.scalar() or 0
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
 
-        offset = (page - 1) * size
-        query = query.order_by(InventoryStock.id.desc()).offset(offset).limit(size)
-        result = await db.execute(query)
-        stocks = result.scalars().all()
+    offset = (page - 1) * size
+    query = query.order_by(InventoryStock.id.desc()).offset(offset).limit(size)
+    result = await db.execute(query)
+    stocks = result.scalars().all()
 
-        return {
-            "items": [stock_to_dict(s) for s in stocks],
-            "total": total,
-            "page": page,
-            "page_size": size,
-        }
-    except Exception:
-        return {
-            "items": [],
-            "total": 0,
-            "page": page,
-            "page_size": size,
-        }
+    return {
+        "items": [stock_to_dict(s) for s in stocks],
+        "total": total,
+        "page": page,
+        "page_size": size,
+    }
 
 
 @router.get("/stock")
@@ -204,39 +196,29 @@ async def get_stock(
     item_code: Optional[str] = None,
     warehouse_code: Optional[str] = None,
 ):
-    """재고 현황 조회 - erp_inventory_stock 테이블이 없으면 빈 결과 반환"""
-    try:
-        query = select(InventoryStock).where(InventoryStock.tenant_id == DEFAULT_TENANT_ID)
+    """재고 현황 조회"""
+    query = select(InventoryStock).where(InventoryStock.tenant_id == DEFAULT_TENANT_ID)
 
-        if item_code:
-            query = query.where(InventoryStock.item_code == item_code)
-        if warehouse_code:
-            query = query.where(InventoryStock.warehouse_code == warehouse_code)
+    if item_code:
+        query = query.where(InventoryStock.item_code == item_code)
+    if warehouse_code:
+        query = query.where(InventoryStock.warehouse_code == warehouse_code)
 
-        count_query = select(func.count()).select_from(query.subquery())
-        total_result = await db.execute(count_query)
-        total = total_result.scalar() or 0
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
 
-        offset = (page - 1) * size
-        query = query.order_by(InventoryStock.id.desc()).offset(offset).limit(size)
-        result = await db.execute(query)
-        stocks = result.scalars().all()
+    offset = (page - 1) * size
+    query = query.order_by(InventoryStock.id.desc()).offset(offset).limit(size)
+    result = await db.execute(query)
+    stocks = result.scalars().all()
 
-        return {
-            "items": [stock_to_dict(s) for s in stocks],
-            "total": total,
-            "page": page,
-            "page_size": size,
-        }
-    except Exception:
-        # 테이블이 존재하지 않는 경우 빈 결과 반환
-        return {
-            "items": [],
-            "total": 0,
-            "page": page,
-            "page_size": size,
-            "message": "Stock table not available",
-        }
+    return {
+        "items": [stock_to_dict(s) for s in stocks],
+        "total": total,
+        "page": page,
+        "page_size": size,
+    }
 
 
 # ==================== Transactions API ====================

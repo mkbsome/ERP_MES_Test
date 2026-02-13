@@ -255,156 +255,6 @@ def work_order_to_response(wo: ProductionOrder) -> dict:
     }
 
 
-# ==================== Mock Data Service ====================
-
-class MockDataService:
-    """DB에 데이터가 없을 경우 반환할 Mock 데이터"""
-
-    @staticmethod
-    def get_bom_list(page: int = 1, page_size: int = 20):
-        bom_list = [
-            BOMResponse(
-                id=1,
-                product_code="SMT-MB-001",
-                product_name="스마트폰 메인보드 A타입",
-                version="3.0",
-                components=156,
-                total_cost=42500,
-                status="active",
-                effective_date="2024-01-01",
-                items=[
-                    BOMItem(item_seq=1, item_code="IC-STM32F4", item_name="STM32F407VGT6 MCU", qty_per=1, unit="EA"),
-                    BOMItem(item_seq=2, item_code="CAP-0603-10UF", item_name="적층세라믹콘덴서 10μF", qty_per=48, unit="EA"),
-                    BOMItem(item_seq=3, item_code="RES-0402-10K", item_name="칩저항 10KΩ", qty_per=32, unit="EA"),
-                    BOMItem(item_seq=4, item_code="CON-USB-C", item_name="USB Type-C 커넥터", qty_per=1, unit="EA"),
-                ],
-                created_at="2024-01-01T00:00:00",
-                updated_at="2024-12-01T00:00:00",
-            ),
-            BOMResponse(
-                id=2,
-                product_code="PWR-BD-002",
-                product_name="전원보드 B형",
-                version="2.1",
-                components=89,
-                total_cost=18500,
-                status="active",
-                effective_date="2024-03-01",
-                items=[
-                    BOMItem(item_seq=1, item_code="IC-TPS5430", item_name="DC-DC 컨버터 IC", qty_per=2, unit="EA"),
-                    BOMItem(item_seq=2, item_code="CAP-1206-100UF", item_name="전해콘덴서 100μF", qty_per=12, unit="EA"),
-                    BOMItem(item_seq=3, item_code="IND-10UH", item_name="인덕터 10μH", qty_per=4, unit="EA"),
-                ],
-                created_at="2024-03-01T00:00:00",
-                updated_at="2024-11-15T00:00:00",
-            ),
-            BOMResponse(
-                id=3,
-                product_code="LED-DRV-003",
-                product_name="LED 드라이버",
-                version="1.5",
-                components=45,
-                total_cost=8200,
-                status="active",
-                effective_date="2024-06-01",
-                items=[
-                    BOMItem(item_seq=1, item_code="IC-LED-DRV", item_name="LED 드라이버 IC", qty_per=1, unit="EA"),
-                    BOMItem(item_seq=2, item_code="RES-0402-1K", item_name="칩저항 1KΩ", qty_per=8, unit="EA"),
-                ],
-                created_at="2024-06-01T00:00:00",
-                updated_at="2024-10-20T00:00:00",
-            ),
-        ]
-        return BOMListResponse(
-            items=bom_list,
-            total=len(bom_list),
-            page=page,
-            page_size=page_size,
-        )
-
-    @staticmethod
-    def get_routing_list(page: int = 1, page_size: int = 20):
-        routing_list = [
-            RoutingResponse(
-                id=1,
-                product_code="SMT-MB-001",
-                product_name="스마트폰 메인보드 A타입",
-                version="2.0",
-                operations=8,
-                total_time=45,
-                status="active",
-                effective_date="2024-01-01",
-                steps=[
-                    RoutingStep(step_seq=10, operation_code="PRT", operation_name="인쇄(Printing)", work_center_code="SMT-PR-01", work_center_name="프린터 1호기", setup_time=10, run_time=5, queue_time=2, move_time=1),
-                    RoutingStep(step_seq=20, operation_code="SPI", operation_name="SPI 검사", work_center_code="SMT-SPI-01", work_center_name="SPI 검사기", setup_time=5, run_time=3, queue_time=1, move_time=1),
-                    RoutingStep(step_seq=30, operation_code="MNT", operation_name="칩마운트", work_center_code="SMT-CM-01", work_center_name="칩마운터 1호기", setup_time=20, run_time=15, queue_time=5, move_time=2),
-                    RoutingStep(step_seq=40, operation_code="REF", operation_name="리플로우", work_center_code="SMT-RF-01", work_center_name="리플로우 1호기", setup_time=15, run_time=8, queue_time=3, move_time=2),
-                    RoutingStep(step_seq=50, operation_code="AOI", operation_name="AOI 검사", work_center_code="SMT-AOI-01", work_center_name="AOI 검사기", setup_time=5, run_time=5, queue_time=2, move_time=1),
-                ],
-                created_at="2024-01-01T00:00:00",
-                updated_at="2024-12-01T00:00:00",
-            ),
-            RoutingResponse(
-                id=2,
-                product_code="PWR-BD-002",
-                product_name="전원보드 B형",
-                version="1.5",
-                operations=6,
-                total_time=35,
-                status="active",
-                effective_date="2024-03-01",
-                steps=[
-                    RoutingStep(step_seq=10, operation_code="PRT", operation_name="인쇄(Printing)", work_center_code="SMT-PR-02", work_center_name="프린터 2호기", setup_time=8, run_time=4, queue_time=2, move_time=1),
-                    RoutingStep(step_seq=20, operation_code="MNT", operation_name="칩마운트", work_center_code="SMT-CM-02", work_center_name="칩마운터 2호기", setup_time=15, run_time=12, queue_time=3, move_time=2),
-                    RoutingStep(step_seq=30, operation_code="REF", operation_name="리플로우", work_center_code="SMT-RF-02", work_center_name="리플로우 2호기", setup_time=10, run_time=8, queue_time=2, move_time=1),
-                ],
-                created_at="2024-03-01T00:00:00",
-                updated_at="2024-11-15T00:00:00",
-            ),
-        ]
-        return RoutingListResponse(
-            items=routing_list,
-            total=len(routing_list),
-            page=page,
-            page_size=page_size,
-        )
-
-    @staticmethod
-    def get_work_orders(page: int = 1, page_size: int = 20):
-        work_orders = [
-            WorkOrderResponse(
-                id=1, order_no="WO-2024-0456", product_code="SMT-MB-001", product_name="스마트폰 메인보드 A타입",
-                qty=1000, produced_qty=650, start_date="2024-12-15", end_date="2024-12-18",
-                line_code="SMT-L01", line_name="SMT 1라인", status="in_progress", progress=65.0, priority=1,
-                sales_order_no="SO-2024-0892", created_at="2024-12-14T00:00:00", updated_at="2024-12-15T10:00:00"
-            ),
-            WorkOrderResponse(
-                id=2, order_no="WO-2024-0455", product_code="PWR-BD-002", product_name="전원보드 B형",
-                qty=2000, produced_qty=0, start_date="2024-12-16", end_date="2024-12-19",
-                line_code="SMT-L02", line_name="SMT 2라인", status="waiting", progress=0, priority=2,
-                sales_order_no="SO-2024-0891", created_at="2024-12-14T00:00:00", updated_at="2024-12-14T00:00:00"
-            ),
-            WorkOrderResponse(
-                id=3, order_no="WO-2024-0454", product_code="LED-DRV-003", product_name="LED 드라이버",
-                qty=3000, produced_qty=3000, start_date="2024-12-14", end_date="2024-12-16",
-                line_code="SMT-L03", line_name="SMT 3라인", status="completed", progress=100.0, priority=3,
-                created_at="2024-12-13T00:00:00", updated_at="2024-12-16T16:00:00"
-            ),
-            WorkOrderResponse(
-                id=4, order_no="WO-2024-0453", product_code="ECU-AUT-001", product_name="자동차 ECU 모듈",
-                qty=500, produced_qty=0, start_date="2024-12-17", end_date="2024-12-20",
-                line_code="SMT-L04", line_name="SMT 4라인", status="planned", progress=0, priority=1,
-                sales_order_no="SO-2024-0890", created_at="2024-12-15T00:00:00", updated_at="2024-12-15T00:00:00"
-            ),
-        ]
-        return WorkOrderListResponse(
-            items=work_orders,
-            total=len(work_orders),
-            page=page,
-            page_size=page_size,
-        )
-
-
 # ==================== BOM API ====================
 
 @router.get("/bom", response_model=BOMListResponse)
@@ -444,9 +294,6 @@ async def get_bom_list(
         result = await db.execute(query)
         bom_list = result.scalars().unique().all()
 
-        if not bom_list:
-            return MockDataService.get_bom_list(page, page_size)
-
         # 제품 코드 필터링 (DB 조회 후)
         items = []
         for bom in bom_list:
@@ -462,9 +309,6 @@ async def get_bom_list(
             page=page,
             page_size=page_size,
         )
-    except Exception as e:
-        print(f"Error fetching BOM list: {e}")
-        return MockDataService.get_bom_list(page, page_size)
 
 
 @router.get("/bom/{bom_id}", response_model=BOMResponse)
@@ -609,9 +453,6 @@ async def get_routing_list(
         result = await db.execute(query)
         routing_list = result.scalars().unique().all()
 
-        if not routing_list:
-            return MockDataService.get_routing_list(page, page_size)
-
         items = []
         for routing in routing_list:
             resp = routing_to_response(routing, routing.product)
@@ -626,9 +467,6 @@ async def get_routing_list(
             page=page,
             page_size=page_size,
         )
-    except Exception as e:
-        print(f"Error fetching routing list: {e}")
-        return MockDataService.get_routing_list(page, page_size)
 
 
 @router.get("/routing/{routing_id}", response_model=RoutingResponse)
@@ -692,9 +530,6 @@ async def get_work_orders(
         result = await db.execute(query)
         work_orders = result.scalars().all()
 
-        if not work_orders:
-            return MockDataService.get_work_orders(page, page_size)
-
         items = [WorkOrderResponse(**work_order_to_response(wo)) for wo in work_orders]
 
         return WorkOrderListResponse(
@@ -703,9 +538,6 @@ async def get_work_orders(
             page=page,
             page_size=page_size,
         )
-    except Exception as e:
-        print(f"Error fetching work orders: {e}")
-        return MockDataService.get_work_orders(page, page_size)
 
 
 @router.post("/work-orders", response_model=WorkOrderResponse)

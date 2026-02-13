@@ -31,8 +31,6 @@ from api.schemas.erp.sales import (
     # Analysis
     SalesAnalysis, SalesPerformance,
 )
-from api.services.mock_data import MockDataService
-
 router = APIRouter(prefix="/sales", tags=["ERP Sales"])
 
 # Default tenant ID
@@ -175,20 +173,12 @@ async def get_sales_orders(
         result = await db.execute(query)
         orders = result.scalars().unique().all()
 
-        if not orders:
-            # Return mock data if no DB data
-            return MockDataService.get_sales_orders(page, page_size)
-
         return {
             "items": [order_to_dict(o) for o in orders],
             "total": total,
             "page": page,
             "page_size": page_size,
         }
-    except Exception as e:
-        # Fallback to mock data
-        print(f"Sales orders query error: {e}")
-        return MockDataService.get_sales_orders(page, page_size)
 
 
 @router.get("/orders/{order_id}", response_model=SalesOrderResponse)
@@ -412,17 +402,12 @@ async def get_shipments(
         result = await db.execute(query)
         shipments = result.scalars().unique().all()
 
-        if not shipments:
-            return MockDataService.get_shipments(page, page_size)
-
         return {
             "items": [shipment_to_dict(s) for s in shipments],
             "total": total,
             "page": page,
             "page_size": page_size,
         }
-    except Exception:
-        return MockDataService.get_shipments(page, page_size)
 
 
 @router.get("/shipments/{shipment_id}", response_model=ShipmentResponse)
@@ -565,7 +550,15 @@ async def get_sales_analysis(
         total_revenue = decimal_to_float(row.total_revenue)
 
         if total_orders == 0:
-            return MockDataService.get_sales_analysis()
+            return {
+                "period": datetime.utcnow().strftime("%Y-%m"),
+                "total_orders": 0,
+                "total_revenue": 0,
+                "order_by_status": {},
+                "revenue_by_customer": [],
+                "revenue_by_product": [],
+                "monthly_trend": [],
+            }
 
         # Get order by status
         status_query = select(
@@ -628,8 +621,6 @@ async def get_sales_analysis(
             "revenue_by_product": revenue_by_product,
             "monthly_trend": [],
         }
-    except Exception:
-        return MockDataService.get_sales_analysis()
 
 
 @router.get("/analysis/performance")
@@ -650,7 +641,10 @@ async def get_sales_performance(
         rows = result.all()
 
         if not rows:
-            return MockDataService.get_sales_performance()
+            return {
+                "period": datetime.utcnow().strftime("%Y-%m"),
+                "performances": [],
+            }
 
         performances = []
         for row in rows:
@@ -670,8 +664,6 @@ async def get_sales_performance(
             "period": datetime.utcnow().strftime("%Y-%m"),
             "performances": performances,
         }
-    except Exception:
-        return MockDataService.get_sales_performance()
 
 
 @router.get("/analysis/delivery")
@@ -686,7 +678,15 @@ async def get_delivery_performance(
         total_shipments = total_result.scalar() or 0
 
         if total_shipments == 0:
-            return MockDataService.get_delivery_performance()
+            return {
+                "period": datetime.utcnow().strftime("%Y-%m"),
+                "total_shipments": 0,
+                "on_time_shipments": 0,
+                "on_time_rate": 0,
+                "avg_delay_days": 0,
+                "by_customer": [],
+                "delay_reasons": [],
+            }
 
         # Count delivered shipments
         delivered_query = select(func.count(Shipment.id)).where(
@@ -706,8 +706,6 @@ async def get_delivery_performance(
             "by_customer": [],
             "delay_reasons": [],
         }
-    except Exception:
-        return MockDataService.get_delivery_performance()
 
 
 # ==================== Additional APIs (프론트엔드 호환) ====================

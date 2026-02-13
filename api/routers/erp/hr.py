@@ -131,164 +131,6 @@ def payroll_to_dict(payroll: Payroll) -> dict:
     }
 
 
-# ==================== Mock Data Service ====================
-
-class MockDataService:
-    """DB에 데이터가 없을 때 사용할 Mock 데이터 서비스"""
-
-    @staticmethod
-    def get_departments() -> List[dict]:
-        """부서 목록 Mock 데이터"""
-        return [
-            {"id": 1, "department_code": "PROD", "department_name": "생산부", "parent_code": None, "manager_id": "E001", "cost_center_code": "CC01", "is_active": True, "created_at": datetime.now().isoformat()},
-            {"id": 2, "department_code": "QC", "department_name": "품질관리부", "parent_code": None, "manager_id": "E002", "cost_center_code": "CC02", "is_active": True, "created_at": datetime.now().isoformat()},
-        ]
-
-    @staticmethod
-    def get_positions() -> List[dict]:
-        """직위 목록 Mock 데이터"""
-        return [
-            {"id": 1, "position_code": "P01", "position_name": "사원", "position_level": 1, "is_active": True, "created_at": datetime.now().isoformat()},
-            {"id": 2, "position_code": "P02", "position_name": "대리", "position_level": 2, "is_active": True, "created_at": datetime.now().isoformat()},
-        ]
-
-    @staticmethod
-    def get_employees(page: int = 1, size: int = 20) -> dict:
-        """사원 목록 Mock 데이터"""
-        mock_employees = [
-            {
-                "id": 1,
-                "employee_id": "E001",
-                "employee_name": "김철수",
-                "email": "kim@example.com",
-                "phone": "010-1234-5678",
-                "birth_date": "1985-01-15",
-                "gender": "M",
-                "address": "서울시 강남구",
-                "department_code": "PROD",
-                "position_code": "P02",
-                "employment_type": "REGULAR",
-                "status": "ACTIVE",
-                "hire_date": "2020-03-01",
-                "resign_date": None,
-                "base_salary": 4500000.0,
-                "bank_name": "국민은행",
-                "bank_account": "123-456-789",
-                "years_of_service": 4.9,
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat(),
-            },
-            {
-                "id": 2,
-                "employee_id": "E002",
-                "employee_name": "이영희",
-                "email": "lee@example.com",
-                "phone": "010-2345-6789",
-                "birth_date": "1990-05-20",
-                "gender": "F",
-                "address": "서울시 서초구",
-                "department_code": "QC",
-                "position_code": "P01",
-                "employment_type": "REGULAR",
-                "status": "ACTIVE",
-                "hire_date": "2022-01-10",
-                "resign_date": None,
-                "base_salary": 3800000.0,
-                "bank_name": "신한은행",
-                "bank_account": "987-654-321",
-                "years_of_service": 3.0,
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat(),
-            },
-        ]
-
-        return {
-            "items": mock_employees,
-            "total": len(mock_employees),
-            "page": page,
-            "size": size
-        }
-
-    @staticmethod
-    def get_employee_summary() -> dict:
-        """사원 현황 요약 Mock 데이터"""
-        return {
-            "total_employees": 350,
-            "active_employees": 338,
-            "new_hires_this_month": 5,
-            "resignations_this_month": 2,
-            "by_department": [
-                {"department": "생산부", "count": 180},
-                {"department": "품질관리부", "count": 35},
-            ],
-            "by_employment_type": [
-                {"type": "정규직", "count": 310},
-                {"type": "계약직", "count": 28},
-            ],
-            "avg_years_of_service": 6.8
-        }
-
-    @staticmethod
-    def get_attendance_records(page: int = 1, size: int = 50) -> dict:
-        """근태 기록 Mock 데이터"""
-        today = date.today()
-        mock_records = [
-            {
-                "id": 1,
-                "employee_id": "E001",
-                "work_date": today.isoformat(),
-                "check_in": datetime.combine(today, time(8, 55)).isoformat(),
-                "check_out": datetime.combine(today, time(18, 10)).isoformat(),
-                "work_hours": 8.25,
-                "overtime_hours": 0.17,
-                "status": "NORMAL",
-                "leave_type": None,
-                "remark": None,
-                "created_at": datetime.now().isoformat(),
-            }
-        ]
-
-        return {
-            "items": mock_records,
-            "total": len(mock_records),
-            "page": page,
-            "size": size
-        }
-
-    @staticmethod
-    def get_payroll_list(page: int = 1, size: int = 20) -> dict:
-        """급여 목록 Mock 데이터"""
-        mock_payroll = [
-            {
-                "id": 1,
-                "payroll_no": "PAY202501001",
-                "employee_id": "E001",
-                "pay_year": 2025,
-                "pay_month": 1,
-                "base_salary": 4500000.0,
-                "overtime_pay": 280000.0,
-                "bonus": 0.0,
-                "allowances": 200000.0,
-                "gross_pay": 4980000.0,
-                "income_tax": 200000.0,
-                "social_insurance": 450000.0,
-                "other_deductions": 0.0,
-                "total_deductions": 650000.0,
-                "net_pay": 4330000.0,
-                "payment_date": "2025-01-25",
-                "status": "PAID",
-                "created_at": datetime.now().isoformat(),
-            }
-        ]
-
-        return {
-            "items": mock_payroll,
-            "total": len(mock_payroll),
-            "page": page,
-            "size": size
-        }
-
-
 # ============== 부서 관리 ==============
 
 @router.get("/departments", summary="부서 목록 조회")
@@ -308,16 +150,10 @@ async def get_departments(
         result = await db.execute(query)
         departments = result.scalars().all()
 
-        if not departments:
-            return {"items": MockDataService.get_departments(), "total": 2}
-
         return {
             "items": [department_to_dict(d) for d in departments],
             "total": len(departments)
         }
-    except Exception as e:
-        print(f"Error fetching departments: {e}")
-        return {"items": MockDataService.get_departments(), "total": 2}
 
 
 @router.get("/departments/{department_code}", summary="부서 상세 조회")
@@ -338,12 +174,9 @@ async def get_department(
         dept = result.scalar_one_or_none()
 
         if not dept:
-            return MockDataService.get_departments()[0]
+            raise HTTPException(status_code=404, detail=f"Department {department_code} not found")
 
         return department_to_dict(dept)
-    except Exception as e:
-        print(f"Error fetching department: {e}")
-        return MockDataService.get_departments()[0]
 
 
 # ============== 직위 관리 ==============
@@ -365,16 +198,10 @@ async def get_positions(
         result = await db.execute(query)
         positions = result.scalars().all()
 
-        if not positions:
-            return {"items": MockDataService.get_positions(), "total": 2}
-
         return {
             "items": [position_to_dict(p) for p in positions],
             "total": len(positions)
         }
-    except Exception as e:
-        print(f"Error fetching positions: {e}")
-        return {"items": MockDataService.get_positions(), "total": 2}
 
 
 # ============== 사원 관리 ==============
@@ -418,20 +245,12 @@ async def get_employees(
         result = await db.execute(query)
         employees = result.scalars().all()
 
-        if not employees:
-            return MockDataService.get_employees(page, size)
-
         return {
             "items": [employee_to_dict(e) for e in employees],
             "total": total,
             "page": page,
             "size": size
         }
-    except Exception as e:
-        print(f"Error fetching employees: {e}")
-        import traceback
-        traceback.print_exc()
-        return MockDataService.get_employees(page, size)
 
 
 @router.get("/employees/summary", summary="사원 현황 요약")
@@ -454,9 +273,6 @@ async def get_employee_summary(
         )
         active_result = await db.execute(active_query)
         active = active_result.scalar() or 0
-
-        if total == 0:
-            return MockDataService.get_employee_summary()
 
         # 이번 달 입사자
         today = date.today()
@@ -490,9 +306,6 @@ async def get_employee_summary(
             "by_employment_type": [],
             "avg_years_of_service": 0.0
         }
-    except Exception as e:
-        print(f"Error fetching employee summary: {e}")
-        return MockDataService.get_employee_summary()
 
 
 @router.get("/employees/{employee_id}", summary="사원 상세 조회")
@@ -513,16 +326,9 @@ async def get_employee(
         emp = result.scalar_one_or_none()
 
         if not emp:
-            mock = MockDataService.get_employees()["items"][0]
-            mock["employee_id"] = employee_id
-            return mock
+            raise HTTPException(status_code=404, detail=f"Employee {employee_id} not found")
 
         return employee_to_dict(emp)
-    except Exception as e:
-        print(f"Error fetching employee: {e}")
-        mock = MockDataService.get_employees()["items"][0]
-        mock["employee_id"] = employee_id
-        return mock
 
 
 # ============== 근태 관리 ==============
@@ -563,18 +369,12 @@ async def get_attendance_records(
         result = await db.execute(query)
         records = result.scalars().all()
 
-        if not records:
-            return MockDataService.get_attendance_records(page, size)
-
         return {
             "items": [attendance_to_dict(r) for r in records],
             "total": total,
             "page": page,
             "size": size
         }
-    except Exception as e:
-        print(f"Error fetching attendance records: {e}")
-        return MockDataService.get_attendance_records(page, size)
 
 
 @router.get("/attendance/daily-summary", summary="일별 근태 현황")
@@ -593,17 +393,6 @@ async def get_daily_attendance_summary(
         )
         total_result = await db.execute(total_query)
         total = total_result.scalar() or 0
-
-        if total == 0:
-            return {
-                "work_date": work_date.isoformat(),
-                "total_employees": 350,
-                "present_count": 328,
-                "absent_count": 5,
-                "late_count": 12,
-                "on_leave_count": 17,
-                "attendance_rate": 93.7
-            }
 
         # 출근자 수
         present_query = select(func.count(Attendance.id)).where(
@@ -650,17 +439,6 @@ async def get_daily_attendance_summary(
             "on_leave_count": on_leave,
             "attendance_rate": round(attendance_rate, 1)
         }
-    except Exception as e:
-        print(f"Error fetching daily attendance summary: {e}")
-        return {
-            "work_date": work_date.isoformat(),
-            "total_employees": 350,
-            "present_count": 328,
-            "absent_count": 5,
-            "late_count": 12,
-            "on_leave_count": 17,
-            "attendance_rate": 93.7
-        }
 
 
 @router.get("/attendance/summary/{employee_id}", summary="사원별 근태 요약")
@@ -690,18 +468,6 @@ async def get_attendance_summary(
         result = await db.execute(query)
         records = result.scalars().all()
 
-        if not records:
-            return {
-                "employee_id": employee_id,
-                "year_month": f"{year}-{month}",
-                "total_work_days": 22,
-                "actual_work_days": 21,
-                "total_work_hours": 176.5,
-                "overtime_hours": 15.5,
-                "late_count": 1,
-                "absent_count": 0
-            }
-
         total_work_hours = sum(decimal_to_float(r.work_hours) for r in records)
         overtime_hours = sum(decimal_to_float(r.overtime_hours) for r in records)
         late_count = sum(1 for r in records if r.status == "LATE")
@@ -716,18 +482,6 @@ async def get_attendance_summary(
             "overtime_hours": overtime_hours,
             "late_count": late_count,
             "absent_count": absent_count
-        }
-    except Exception as e:
-        print(f"Error fetching attendance summary: {e}")
-        return {
-            "employee_id": employee_id,
-            "year_month": f"{year}-{month}",
-            "total_work_days": 22,
-            "actual_work_days": 21,
-            "total_work_hours": 176.5,
-            "overtime_hours": 15.5,
-            "late_count": 1,
-            "absent_count": 0
         }
 
 
@@ -769,18 +523,12 @@ async def get_payroll_list(
         result = await db.execute(query)
         payrolls = result.scalars().all()
 
-        if not payrolls:
-            return MockDataService.get_payroll_list(page, size)
-
         return {
             "items": [payroll_to_dict(p) for p in payrolls],
             "total": total,
             "page": page,
             "size": size
         }
-    except Exception as e:
-        print(f"Error fetching payroll list: {e}")
-        return MockDataService.get_payroll_list(page, size)
 
 
 @router.get("/payroll/{payroll_no}", summary="급여 상세 조회")
@@ -801,16 +549,9 @@ async def get_payroll_detail(
         payroll = result.scalar_one_or_none()
 
         if not payroll:
-            mock = MockDataService.get_payroll_list()["items"][0]
-            mock["payroll_no"] = payroll_no
-            return mock
+            raise HTTPException(status_code=404, detail=f"Payroll {payroll_no} not found")
 
         return payroll_to_dict(payroll)
-    except Exception as e:
-        print(f"Error fetching payroll detail: {e}")
-        mock = MockDataService.get_payroll_list()["items"][0]
-        mock["payroll_no"] = payroll_no
-        return mock
 
 
 @router.get("/payroll/summary", summary="급여 요약")
@@ -832,16 +573,6 @@ async def get_payroll_summary(
         result = await db.execute(query)
         payrolls = result.scalars().all()
 
-        if not payrolls:
-            return {
-                "year_month": f"{year}-{month:02d}",
-                "total_employees": 338,
-                "total_gross": 1520000000.0,
-                "total_deductions": 285000000.0,
-                "total_net": 1235000000.0,
-                "by_department": []
-            }
-
         total_employees = len(payrolls)
         total_gross = sum(decimal_to_float(p.gross_pay) for p in payrolls)
         total_deductions = sum(decimal_to_float(p.total_deductions) for p in payrolls)
@@ -853,16 +584,6 @@ async def get_payroll_summary(
             "total_gross": total_gross,
             "total_deductions": total_deductions,
             "total_net": total_net,
-            "by_department": []
-        }
-    except Exception as e:
-        print(f"Error fetching payroll summary: {e}")
-        return {
-            "year_month": f"{year}-{month:02d}",
-            "total_employees": 338,
-            "total_gross": 1520000000.0,
-            "total_deductions": 285000000.0,
-            "total_net": 1235000000.0,
             "by_department": []
         }
 
@@ -884,28 +605,6 @@ async def get_hr_dashboard(
         return {
             "employee_summary": emp_summary,
             "attendance_today": attendance_today,
-            "pending_leaves": 8,
-            "recent_hires": [],
-            "organization_chart": {
-                "total_departments": 15,
-                "total_teams": 25,
-                "management_positions": 56,
-                "production_ratio": 51.4
-            }
-        }
-    except Exception as e:
-        print(f"Error fetching HR dashboard: {e}")
-        return {
-            "employee_summary": MockDataService.get_employee_summary(),
-            "attendance_today": {
-                "work_date": date.today().isoformat(),
-                "total_employees": 350,
-                "present_count": 328,
-                "absent_count": 5,
-                "late_count": 12,
-                "on_leave_count": 17,
-                "attendance_rate": 93.7
-            },
             "pending_leaves": 8,
             "recent_hires": [],
             "organization_chart": {

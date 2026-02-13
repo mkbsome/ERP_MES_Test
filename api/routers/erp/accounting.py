@@ -211,496 +211,6 @@ def closing_entry_to_dict(entry: ClosingEntry) -> dict:
     }
 
 
-# ==================== Mock Data Service ====================
-
-class MockDataService:
-    """DB에 데이터가 없을 때 사용할 Mock 데이터 서비스"""
-
-    @staticmethod
-    def get_account_tree(account_type: Optional[AccountType] = None) -> dict:
-        """계정과목 트리 Mock 데이터"""
-        mock_accounts = [
-            {
-                "account_code": "1",
-                "account_name": "자산",
-                "account_name_en": "Assets",
-                "account_type": AccountType.ASSET,
-                "parent_code": None,
-                "level": 1,
-                "is_control": False,
-                "is_cash": False,
-                "is_bank": False,
-                "debit_credit": "D",
-                "budget_control": False,
-                "is_active": True,
-                "description": "자산계정",
-                "created_at": datetime.now() - timedelta(days=365),
-                "updated_at": datetime.now() - timedelta(days=30),
-                "children": [
-                    {
-                        "account_code": "11",
-                        "account_name": "유동자산",
-                        "account_name_en": "Current Assets",
-                        "account_type": AccountType.ASSET,
-                        "parent_code": "1",
-                        "level": 2,
-                        "is_control": False,
-                        "is_cash": False,
-                        "is_bank": False,
-                        "debit_credit": "D",
-                        "budget_control": False,
-                        "is_active": True,
-                        "description": None,
-                        "created_at": datetime.now() - timedelta(days=365),
-                        "updated_at": datetime.now() - timedelta(days=30),
-                        "children": [
-                            {
-                                "account_code": "1101",
-                                "account_name": "현금",
-                                "account_name_en": "Cash",
-                                "account_type": AccountType.ASSET,
-                                "parent_code": "11",
-                                "level": 3,
-                                "is_control": False,
-                                "is_cash": True,
-                                "is_bank": False,
-                                "debit_credit": "D",
-                                "budget_control": False,
-                                "is_active": True,
-                                "description": None,
-                                "created_at": datetime.now() - timedelta(days=365),
-                                "updated_at": datetime.now() - timedelta(days=30),
-                                "children": None
-                            },
-                            {
-                                "account_code": "1102",
-                                "account_name": "보통예금",
-                                "account_name_en": "Bank Deposits",
-                                "account_type": AccountType.ASSET,
-                                "parent_code": "11",
-                                "level": 3,
-                                "is_control": False,
-                                "is_cash": True,
-                                "is_bank": True,
-                                "debit_credit": "D",
-                                "budget_control": False,
-                                "is_active": True,
-                                "description": None,
-                                "created_at": datetime.now() - timedelta(days=365),
-                                "updated_at": datetime.now() - timedelta(days=30),
-                                "children": None
-                            },
-                            {
-                                "account_code": "1103",
-                                "account_name": "외상매출금",
-                                "account_name_en": "Accounts Receivable",
-                                "account_type": AccountType.ASSET,
-                                "parent_code": "11",
-                                "level": 3,
-                                "is_control": True,
-                                "is_cash": False,
-                                "is_bank": False,
-                                "debit_credit": "D",
-                                "budget_control": False,
-                                "is_active": True,
-                                "description": "거래처별 관리",
-                                "created_at": datetime.now() - timedelta(days=365),
-                                "updated_at": datetime.now() - timedelta(days=30),
-                                "children": None
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "account_code": "2",
-                "account_name": "부채",
-                "account_name_en": "Liabilities",
-                "account_type": AccountType.LIABILITY,
-                "parent_code": None,
-                "level": 1,
-                "is_control": False,
-                "is_cash": False,
-                "is_bank": False,
-                "debit_credit": "C",
-                "budget_control": False,
-                "is_active": True,
-                "description": "부채계정",
-                "created_at": datetime.now() - timedelta(days=365),
-                "updated_at": datetime.now() - timedelta(days=30),
-                "children": []
-            },
-            {
-                "account_code": "4",
-                "account_name": "수익",
-                "account_name_en": "Revenue",
-                "account_type": AccountType.REVENUE,
-                "parent_code": None,
-                "level": 1,
-                "is_control": False,
-                "is_cash": False,
-                "is_bank": False,
-                "debit_credit": "C",
-                "budget_control": False,
-                "is_active": True,
-                "description": "수익계정",
-                "created_at": datetime.now() - timedelta(days=365),
-                "updated_at": datetime.now() - timedelta(days=30),
-                "children": []
-            },
-            {
-                "account_code": "5",
-                "account_name": "비용",
-                "account_name_en": "Expenses",
-                "account_type": AccountType.EXPENSE,
-                "parent_code": None,
-                "level": 1,
-                "is_control": False,
-                "is_cash": False,
-                "is_bank": False,
-                "debit_credit": "D",
-                "budget_control": True,
-                "is_active": True,
-                "description": "비용계정",
-                "created_at": datetime.now() - timedelta(days=365),
-                "updated_at": datetime.now() - timedelta(days=30),
-                "children": []
-            }
-        ]
-
-        if account_type:
-            mock_accounts = [a for a in mock_accounts if a["account_type"] == account_type]
-
-        return {"items": [AccountCodeResponse(**a) for a in mock_accounts]}
-
-    @staticmethod
-    def get_vouchers(page: int = 1, size: int = 20) -> dict:
-        """전표 목록 Mock 데이터"""
-        mock_vouchers = [
-            {
-                "voucher_no": "VCH-2025-01-0001",
-                "voucher_date": date(2025, 1, 15),
-                "voucher_type": VoucherType.SALES,
-                "status": VoucherStatus.POSTED,
-                "fiscal_year": "2025",
-                "fiscal_period": "01",
-                "description": "삼성전자 매출",
-                "total_debit": Decimal("55000000"),
-                "total_credit": Decimal("55000000"),
-                "currency": "KRW",
-                "exchange_rate": Decimal("1"),
-                "reference_type": "SALES_ORDER",
-                "reference_no": "SO-2025-0001",
-                "department_code": "SALES",
-                "cost_center": "CC-SALES",
-                "created_by": "admin",
-                "approved_by": "finance_mgr",
-                "approved_at": datetime.now() - timedelta(days=10),
-                "posted_at": datetime.now() - timedelta(days=9),
-                "cancelled_at": None,
-                "cancel_reason": None,
-                "created_at": datetime.now() - timedelta(days=15),
-                "updated_at": datetime.now() - timedelta(days=9),
-                "details": None
-            },
-            {
-                "voucher_no": "VCH-2025-01-0002",
-                "voucher_date": date(2025, 1, 20),
-                "voucher_type": VoucherType.PURCHASE,
-                "status": VoucherStatus.POSTED,
-                "fiscal_year": "2025",
-                "fiscal_period": "01",
-                "description": "원자재 구매 (칩 부품)",
-                "total_debit": Decimal("12500000"),
-                "total_credit": Decimal("12500000"),
-                "currency": "KRW",
-                "exchange_rate": Decimal("1"),
-                "reference_type": "PURCHASE_ORDER",
-                "reference_no": "PO-2025-0015",
-                "department_code": "PURCHASE",
-                "cost_center": "CC-PROD",
-                "created_by": "purchase_staff",
-                "approved_by": "finance_mgr",
-                "approved_at": datetime.now() - timedelta(days=8),
-                "posted_at": datetime.now() - timedelta(days=7),
-                "cancelled_at": None,
-                "cancel_reason": None,
-                "created_at": datetime.now() - timedelta(days=10),
-                "updated_at": datetime.now() - timedelta(days=7),
-                "details": None
-            },
-            {
-                "voucher_no": "VCH-2025-01-0003",
-                "voucher_date": date(2025, 1, 25),
-                "voucher_type": VoucherType.PAYMENT,
-                "status": VoucherStatus.APPROVED,
-                "fiscal_year": "2025",
-                "fiscal_period": "01",
-                "description": "급여 지급",
-                "total_debit": Decimal("180000000"),
-                "total_credit": Decimal("180000000"),
-                "currency": "KRW",
-                "exchange_rate": Decimal("1"),
-                "reference_type": "PAYROLL",
-                "reference_no": "PAY-2025-01",
-                "department_code": "HR",
-                "cost_center": None,
-                "created_by": "hr_staff",
-                "approved_by": "finance_mgr",
-                "approved_at": datetime.now() - timedelta(days=3),
-                "posted_at": None,
-                "cancelled_at": None,
-                "cancel_reason": None,
-                "created_at": datetime.now() - timedelta(days=5),
-                "updated_at": datetime.now() - timedelta(days=3),
-                "details": None
-            },
-            {
-                "voucher_no": "VCH-2025-01-0004",
-                "voucher_date": date(2025, 1, 28),
-                "voucher_type": VoucherType.TRANSFER,
-                "status": VoucherStatus.PENDING,
-                "fiscal_year": "2025",
-                "fiscal_period": "01",
-                "description": "감가상각비 계상",
-                "total_debit": Decimal("15000000"),
-                "total_credit": Decimal("15000000"),
-                "currency": "KRW",
-                "exchange_rate": Decimal("1"),
-                "reference_type": "CLOSING",
-                "reference_no": "CLS-2025-01",
-                "department_code": "FINANCE",
-                "cost_center": None,
-                "created_by": "finance_staff",
-                "approved_by": None,
-                "approved_at": None,
-                "posted_at": None,
-                "cancelled_at": None,
-                "cancel_reason": None,
-                "created_at": datetime.now() - timedelta(days=2),
-                "updated_at": datetime.now() - timedelta(days=2),
-                "details": None
-            }
-        ]
-
-        total = len(mock_vouchers)
-        total_debit = sum(v["total_debit"] for v in mock_vouchers)
-        total_credit = sum(v["total_credit"] for v in mock_vouchers)
-
-        return {
-            "items": [VoucherResponse(**v) for v in mock_vouchers],
-            "total": total,
-            "page": page,
-            "size": size,
-            "total_debit": total_debit,
-            "total_credit": total_credit
-        }
-
-    @staticmethod
-    def get_general_ledger(fiscal_year: str, fiscal_period: str = None) -> dict:
-        """총계정원장 Mock 데이터"""
-        mock_ledger = [
-            {
-                "id": 1,
-                "fiscal_year": fiscal_year,
-                "fiscal_period": fiscal_period or "01",
-                "account_code": "1101",
-                "account_name": "현금",
-                "opening_balance": Decimal("50000000"),
-                "debit_total": Decimal("120000000"),
-                "credit_total": Decimal("80000000"),
-                "closing_balance": Decimal("90000000"),
-                "transaction_count": 45
-            },
-            {
-                "id": 2,
-                "fiscal_year": fiscal_year,
-                "fiscal_period": fiscal_period or "01",
-                "account_code": "1102",
-                "account_name": "보통예금",
-                "opening_balance": Decimal("500000000"),
-                "debit_total": Decimal("850000000"),
-                "credit_total": Decimal("720000000"),
-                "closing_balance": Decimal("630000000"),
-                "transaction_count": 156
-            },
-            {
-                "id": 3,
-                "fiscal_year": fiscal_year,
-                "fiscal_period": fiscal_period or "01",
-                "account_code": "1103",
-                "account_name": "외상매출금",
-                "opening_balance": Decimal("320000000"),
-                "debit_total": Decimal("1200000000"),
-                "credit_total": Decimal("980000000"),
-                "closing_balance": Decimal("540000000"),
-                "transaction_count": 89
-            },
-            {
-                "id": 4,
-                "fiscal_year": fiscal_year,
-                "fiscal_period": fiscal_period or "01",
-                "account_code": "4101",
-                "account_name": "제품매출",
-                "opening_balance": Decimal("0"),
-                "debit_total": Decimal("0"),
-                "credit_total": Decimal("1500000000"),
-                "closing_balance": Decimal("1500000000"),
-                "transaction_count": 78
-            }
-        ]
-
-        summary = {
-            "total_debit": sum(l["debit_total"] for l in mock_ledger),
-            "total_credit": sum(l["credit_total"] for l in mock_ledger)
-        }
-
-        return {
-            "items": [GeneralLedgerResponse(**l) for l in mock_ledger],
-            "total": len(mock_ledger),
-            "summary": summary
-        }
-
-    @staticmethod
-    def get_cost_centers() -> List[dict]:
-        """코스트센터 Mock 데이터"""
-        return [
-            {
-                "cost_center_code": "CC-PROD-SMT",
-                "cost_center_name": "SMT 생산부",
-                "parent_code": None,
-                "department_code": "PROD",
-                "factory_code": "F001",
-                "responsible_person": "김생산",
-                "is_active": True,
-                "created_at": datetime.now() - timedelta(days=365),
-                "updated_at": datetime.now() - timedelta(days=30)
-            },
-            {
-                "cost_center_code": "CC-PROD-ASSY",
-                "cost_center_name": "조립 생산부",
-                "parent_code": None,
-                "department_code": "PROD",
-                "factory_code": "F001",
-                "responsible_person": "이조립",
-                "is_active": True,
-                "created_at": datetime.now() - timedelta(days=365),
-                "updated_at": datetime.now() - timedelta(days=30)
-            },
-            {
-                "cost_center_code": "CC-QC",
-                "cost_center_name": "품질관리부",
-                "parent_code": None,
-                "department_code": "QC",
-                "factory_code": "F001",
-                "responsible_person": "박품질",
-                "is_active": True,
-                "created_at": datetime.now() - timedelta(days=365),
-                "updated_at": datetime.now() - timedelta(days=30)
-            },
-            {
-                "cost_center_code": "CC-ADMIN",
-                "cost_center_name": "관리부",
-                "parent_code": None,
-                "department_code": "ADMIN",
-                "factory_code": None,
-                "responsible_person": "최관리",
-                "is_active": True,
-                "created_at": datetime.now() - timedelta(days=365),
-                "updated_at": datetime.now() - timedelta(days=30)
-            }
-        ]
-
-    @staticmethod
-    def get_product_costs(fiscal_year: str, fiscal_period: str) -> List[dict]:
-        """품목별 원가 Mock 데이터"""
-        return [
-            {
-                "product_code": "PROD-SMT-001",
-                "product_name": "스마트폰 메인보드 A타입",
-                "fiscal_year": fiscal_year,
-                "fiscal_period": fiscal_period,
-                "material_cost": Decimal("15000"),
-                "labor_cost": Decimal("3500"),
-                "overhead_cost": Decimal("2800"),
-                "outsourcing_cost": Decimal("1200"),
-                "total_standard_cost": Decimal("22000"),
-                "total_actual_cost": Decimal("22500"),
-                "total_variance": Decimal("500"),
-                "variance_rate": Decimal("2.27"),
-                "production_qty": Decimal("15000"),
-                "unit_cost": Decimal("22500")
-            },
-            {
-                "product_code": "PROD-SMT-002",
-                "product_name": "스마트폰 메인보드 B타입",
-                "fiscal_year": fiscal_year,
-                "fiscal_period": fiscal_period,
-                "material_cost": Decimal("18000"),
-                "labor_cost": Decimal("4000"),
-                "overhead_cost": Decimal("3200"),
-                "outsourcing_cost": Decimal("1500"),
-                "total_standard_cost": Decimal("26000"),
-                "total_actual_cost": Decimal("26700"),
-                "total_variance": Decimal("700"),
-                "variance_rate": Decimal("2.69"),
-                "production_qty": Decimal("12000"),
-                "unit_cost": Decimal("26700")
-            },
-            {
-                "product_code": "PROD-LED-001",
-                "product_name": "LED 드라이버 보드",
-                "fiscal_year": fiscal_year,
-                "fiscal_period": fiscal_period,
-                "material_cost": Decimal("8500"),
-                "labor_cost": Decimal("2000"),
-                "overhead_cost": Decimal("1500"),
-                "outsourcing_cost": Decimal("500"),
-                "total_standard_cost": Decimal("12500"),
-                "total_actual_cost": Decimal("12200"),
-                "total_variance": Decimal("-300"),
-                "variance_rate": Decimal("-2.40"),
-                "production_qty": Decimal("25000"),
-                "unit_cost": Decimal("12200")
-            }
-        ]
-
-    @staticmethod
-    def get_fiscal_periods(fiscal_year: str) -> dict:
-        """회계기간 Mock 데이터"""
-        mock_periods = []
-        for month in range(1, 13):
-            start = date(int(fiscal_year), month, 1)
-            if month == 12:
-                end = date(int(fiscal_year), 12, 31)
-            else:
-                end = date(int(fiscal_year), month + 1, 1) - timedelta(days=1)
-
-            status = ClosingStatus.CLOSED if month < datetime.now().month else ClosingStatus.OPEN
-
-            mock_periods.append({
-                "id": month,
-                "fiscal_year": fiscal_year,
-                "fiscal_period": f"{month:02d}",
-                "period_name": f"{fiscal_year}년 {month}월",
-                "start_date": start,
-                "end_date": end,
-                "closing_type": ClosingType.MONTHLY,
-                "status": status,
-                "closed_at": datetime.now() - timedelta(days=30) if status == ClosingStatus.CLOSED else None,
-                "closed_by": "finance_mgr" if status == ClosingStatus.CLOSED else None,
-                "reopened_at": None,
-                "reopened_by": None
-            })
-
-        current = next((p for p in mock_periods if p["status"] == ClosingStatus.OPEN), None)
-
-        return {
-            "items": [FiscalPeriodResponse(**p) for p in mock_periods],
-            "current_period": FiscalPeriodResponse(**current) if current else None
-        }
-
-
 # ============== 계정과목 관리 ==============
 
 @router.get("/accounts", response_model=AccountCodeTreeResponse, summary="계정과목 트리 조회")
@@ -724,15 +234,9 @@ async def get_account_tree(
         result = await db.execute(query)
         accounts = result.scalars().all()
 
-        if not accounts:
-            return MockDataService.get_account_tree(account_type)
-
         return AccountCodeTreeResponse(
             items=[AccountCodeResponse(**account_to_dict(a, True)) for a in accounts]
         )
-    except Exception as e:
-        print(f"Error fetching account tree: {e}")
-        return MockDataService.get_account_tree(account_type)
 
 
 @router.get("/accounts/{account_code}", response_model=AccountCodeResponse, summary="계정과목 상세 조회")
@@ -899,9 +403,6 @@ async def get_vouchers(
         result = await db.execute(query)
         vouchers = result.scalars().all()
 
-        if not vouchers:
-            return MockDataService.get_vouchers(page, size)
-
         return VoucherListResponse(
             items=[VoucherResponse(**voucher_to_dict(v)) for v in vouchers],
             total=total,
@@ -910,9 +411,6 @@ async def get_vouchers(
             total_debit=Decimal(str(sums[0])) if sums else Decimal("0"),
             total_credit=Decimal(str(sums[1])) if sums else Decimal("0")
         )
-    except Exception as e:
-        print(f"Error fetching vouchers: {e}")
-        return MockDataService.get_vouchers(page, size)
 
 
 @router.get("/vouchers/{voucher_no}", response_model=VoucherResponse, summary="전표 상세 조회")
@@ -1328,7 +826,11 @@ async def get_general_ledger(
         ledgers = result.scalars().all()
 
         if not ledgers:
-            return MockDataService.get_general_ledger(fiscal_year, fiscal_period)
+            return GeneralLedgerListResponse(
+                items=[],
+                total=0,
+                summary={"total_debit": Decimal("0"), "total_credit": Decimal("0")}
+            )
 
         # 계정명 조회
         account_codes = list(set(l.account_code for l in ledgers))
@@ -1351,9 +853,6 @@ async def get_general_ledger(
             total=len(items),
             summary={"total_debit": total_debit, "total_credit": total_credit}
         )
-    except Exception as e:
-        print(f"Error fetching general ledger: {e}")
-        return MockDataService.get_general_ledger(fiscal_year, fiscal_period)
 
 
 @router.get("/ledger/general/{account_code}/transactions", response_model=LedgerTransactionListResponse, summary="계정별 거래 내역")
@@ -1624,15 +1123,7 @@ async def get_cost_centers(
         result = await db.execute(query)
         cost_centers = result.scalars().all()
 
-        if not cost_centers:
-            mock_data = MockDataService.get_cost_centers()
-            return [CostCenterResponse(**cc) for cc in mock_data]
-
         return [CostCenterResponse(**cost_center_to_dict(cc)) for cc in cost_centers]
-    except Exception as e:
-        print(f"Error fetching cost centers: {e}")
-        mock_data = MockDataService.get_cost_centers()
-        return [CostCenterResponse(**cc) for cc in mock_data]
 
 
 @router.get("/cost/products", response_model=List[ProductCostSummary], summary="품목별 원가 조회")
@@ -1658,8 +1149,7 @@ async def get_product_costs(
         costs = result.scalars().all()
 
         if not costs:
-            mock_data = MockDataService.get_product_costs(fiscal_year, fiscal_period)
-            return [ProductCostSummary(**pc) for pc in mock_data]
+            return []
 
         # 품목별로 그룹화하여 원가 유형별 합계 계산
         product_costs = {}
@@ -1701,10 +1191,6 @@ async def get_product_costs(
                 pc["variance_rate"] = (pc["total_variance"] / pc["total_standard_cost"]) * 100
 
         return [ProductCostSummary(**pc) for pc in product_costs.values()]
-    except Exception as e:
-        print(f"Error fetching product costs: {e}")
-        mock_data = MockDataService.get_product_costs(fiscal_year, fiscal_period)
-        return [ProductCostSummary(**pc) for pc in mock_data]
 
 
 @router.get("/cost/analysis", response_model=CostAnalysisResponse, summary="원가 분석")
@@ -1944,9 +1430,6 @@ async def get_fiscal_periods(
         result = await db.execute(query)
         periods = result.scalars().all()
 
-        if not periods:
-            return MockDataService.get_fiscal_periods(fiscal_year)
-
         items = [FiscalPeriodResponse(**fiscal_period_to_dict(p)) for p in periods]
         current = next((p for p in items if p.status == ClosingStatus.OPEN), None)
 
@@ -1954,9 +1437,6 @@ async def get_fiscal_periods(
             items=items,
             current_period=current
         )
-    except Exception as e:
-        print(f"Error fetching fiscal periods: {e}")
-        return MockDataService.get_fiscal_periods(fiscal_year)
 
 
 @router.post("/fiscal-periods/{fiscal_year}/{fiscal_period}/close", summary="회계기간 마감")
