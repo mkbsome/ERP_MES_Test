@@ -22,6 +22,7 @@ from generators import (
     PurchaseDataGenerator,
     ProductionDataGenerator,
     HRDataGenerator,
+    InventoryDataGenerator,
 )
 from db_connection import truncate_tables
 from config import DATA_PERIOD
@@ -43,6 +44,7 @@ TABLES_TO_TRUNCATE = [
     'erp_goods_receipt',
     'erp_purchase_order_item',
     'erp_purchase_order',
+    'erp_inventory_transaction',
     'erp_inventory_stock',
     # 마스터 (부모)
     'erp_employee',
@@ -81,6 +83,9 @@ def run_all():
     # 5. 생산 (제조오더 → MES → 실적)
     ProductionDataGenerator().generate()
 
+    # 6. 재고 (입고/출고/이동 트랜잭션)
+    InventoryDataGenerator().generate()
+
     elapsed = datetime.now() - start_time
     print("=" * 60)
     print(f"전체 데이터 생성 완료! (소요시간: {elapsed})")
@@ -94,6 +99,7 @@ def run_module(module_name):
         'sales': SalesDataGenerator,
         'purchase': PurchaseDataGenerator,
         'production': ProductionDataGenerator,
+        'inventory': InventoryDataGenerator,
     }
 
     if module_name not in generators:

@@ -40,7 +40,7 @@ router = APIRouter(prefix="/quality", tags=["MES - Quality"])
 
 # ==================== Inspections ====================
 
-@router.get("/inspections", response_model=List[InspectionResultResponse])
+@router.get("/inspections")
 async def get_inspections(
     db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
@@ -79,11 +79,12 @@ async def get_inspections(
     responses = []
     for insp in inspections:
         resp = InspectionResultResponse.model_validate(insp)
-        if insp.total_inspected and insp.total_inspected > 0:
-            resp.pass_rate = (insp.pass_qty / insp.total_inspected) * 100
+        total = (insp.pass_qty or 0) + (insp.fail_qty or 0)
+        if total > 0:
+            resp.pass_rate = ((insp.pass_qty or 0) / total) * 100
         responses.append(resp)
 
-    return responses
+    return {"items": responses, "total": len(responses)}
 
 
 @router.post("/inspections", response_model=InspectionResultResponse)
@@ -135,7 +136,7 @@ async def get_inspection(
 
 # ==================== Defects ====================
 
-@router.get("/defects", response_model=List[DefectDetailResponse])
+@router.get("/defects")
 async def get_defects(
     db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
@@ -171,7 +172,7 @@ async def get_defects(
     result = await db.execute(query)
     defects = result.scalars().all()
 
-    return [DefectDetailResponse.model_validate(d) for d in defects]
+    return {"items": [DefectDetailResponse.model_validate(d) for d in defects], "total": len(defects)}
 
 
 @router.post("/defects", response_model=DefectDetailResponse)

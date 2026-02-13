@@ -126,38 +126,29 @@ class DefectDetailUpdate(BaseModel):
 
 
 class DefectDetailResponse(BaseModel):
-    """Response schema for defect detail"""
+    """Response schema for defect detail - DB 스키마 기반"""
     id: UUID
     tenant_id: UUID
-    defect_timestamp: datetime
-    detection_point: DetectionPoint
-    equipment_code: str
-    line_code: str
+    production_order_id: Optional[UUID] = None
     production_order_no: Optional[str] = None
-    product_code: str
-    lot_no: Optional[str] = None
-    panel_id: Optional[str] = None
-    pcb_serial: Optional[str] = None
-    defect_category: DefectCategory
-    defect_code: str
-    defect_description: Optional[str] = None
+    product_code: Optional[str] = None
+    defect_timestamp: Optional[datetime] = None
+    detection_point: Optional[str] = None
+    line_code: Optional[str] = None
+    equipment_code: Optional[str] = None
+    defect_code: Optional[str] = None
+    defect_category: Optional[str] = None
+    severity: Optional[str] = None
+    defect_qty: Optional[int] = None
     defect_location: Optional[str] = None
-    component_ref: Optional[str] = None
-    component_code: Optional[str] = None
-    x_position: Optional[Decimal] = None
-    y_position: Optional[Decimal] = None
-    defect_qty: int
-    severity: Optional[DefectSeverity] = None
-    image_url: Optional[str] = None
-    detected_by: Optional[str] = None
-    detection_method: Optional[str] = None
-    repair_action: Optional[str] = None
-    repair_result: Optional[RepairResult] = None
-    repaired_by: Optional[str] = None
-    repaired_at: Optional[datetime] = None
+    lot_no: Optional[str] = None
+    repair_result: Optional[str] = None
     root_cause_category: Optional[str] = None
     root_cause_detail: Optional[str] = None
-    created_at: datetime
+    corrective_action: Optional[str] = None
+    worker_id: Optional[str] = None
+    inspector_id: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -201,29 +192,23 @@ class InspectionResultCreate(BaseModel):
 
 
 class InspectionResultResponse(BaseModel):
-    """Response schema for inspection result"""
+    """Response schema for inspection result - DB 스키마 기반"""
     id: UUID
     tenant_id: UUID
-    inspection_no: str
-    inspection_type: InspectionType
+    inspection_no: Optional[str] = None
+    inspection_type: Optional[str] = None
     production_order_id: Optional[UUID] = None
-    lot_no: str
-    board_id: Optional[str] = None
-    product_code: str
-    line_code: Optional[str] = None
-    equipment_id: Optional[UUID] = None
-    operation_no: Optional[int] = None
-    inspection_datetime: datetime
-    shift: Optional[str] = None
-    inspector_code: Optional[str] = None
-    result: InspectionResult
-    total_inspected: int
-    pass_qty: int
-    fail_qty: int
+    lot_no: Optional[str] = None
+    product_code: Optional[str] = None
+    inspection_datetime: Optional[datetime] = None
+    inspector_id: Optional[str] = None
+    sample_size: Optional[int] = None
+    pass_qty: Optional[int] = None
+    fail_qty: Optional[int] = None
+    result: Optional[str] = None
     defect_points: Optional[List[Dict[str, Any]]] = None
-    inspection_time_sec: Optional[Decimal] = None
-    rework_flag: bool
-    created_at: datetime
+    remark: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     # Calculated
     pass_rate: Optional[float] = None

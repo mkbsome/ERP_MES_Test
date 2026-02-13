@@ -43,12 +43,8 @@ from api.models.erp.hr import (
     Department,
     Position,
     Employee,
-    AttendanceRecord,
-    LeaveRequest,
-    LeaveBalance,
-    PayrollHeader,
-    PayrollDetail,
-    SalaryItem,
+    Attendance,
+    Payroll,
 )
 
 __all__ = [
@@ -91,10 +87,6 @@ __all__ = [
     "Department",
     "Position",
     "Employee",
-    "AttendanceRecord",
-    "LeaveRequest",
-    "LeaveBalance",
-    "PayrollHeader",
-    "PayrollDetail",
-    "SalaryItem",
+    "Attendance",
+    "Payroll",
 ]

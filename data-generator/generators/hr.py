@@ -147,13 +147,13 @@ class HRDataGenerator(BaseGenerator):
         print(f"  직원: {len(emp_data)}건 생성")
 
     def generate_attendance(self):
-        """근태 데이터 생성"""
+        """근태 데이터 생성 - 전체 기간(2년)"""
         att_cfg = self.cfg['attendance']
         att_data = []
+        batch_size = 5000  # 배치 크기
 
-        # 최근 3개월 근태 데이터
-        start_date = max(self.period_start, self.period_end - timedelta(days=90))
-        current = start_date
+        # 전체 기간 근태 데이터 (2년치)
+        current = self.period_start
 
         while current <= self.period_end:
             if current.weekday() < 5:  # 평일
@@ -198,8 +198,20 @@ class HRDataGenerator(BaseGenerator):
                         round(overtime_hours, 1), status, datetime.now()
                     ))
 
+            # 배치 처리로 메모리 관리
+            if len(att_data) >= batch_size:
+                execute_batch("""
+                    INSERT INTO erp_attendance
+                    (tenant_id, employee_id, work_date, check_in,
+                     check_out, work_hours, overtime_hours, status, created_at)
+                    VALUES %s ON CONFLICT DO NOTHING
+                """, att_data)
+                print(f"    ... {current.strftime('%Y-%m')} 처리 중")
+                att_data = []
+
             current += timedelta(days=1)
 
+        # 남은 데이터 처리
         if att_data:
             execute_batch("""
                 INSERT INTO erp_attendance
@@ -208,7 +220,10 @@ class HRDataGenerator(BaseGenerator):
                 VALUES %s ON CONFLICT DO NOTHING
             """, att_data)
 
-        print(f"  근태: {len(att_data)}건 생성")
+        # 최종 건수 확인
+        from db_connection import fetch_all
+        result = fetch_all("SELECT COUNT(*) as cnt FROM erp_attendance WHERE tenant_id=%s", (TENANT_ID,))
+        print(f"  근태: {result[0]['cnt']}건 생성")
 
     def generate_payroll(self):
         """급여 데이터 생성"""

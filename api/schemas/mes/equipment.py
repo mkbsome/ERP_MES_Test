@@ -278,34 +278,24 @@ class DowntimeEventUpdate(BaseModel):
 
 
 class DowntimeEventResponse(BaseModel):
-    """Response schema for downtime event"""
+    """Response schema for downtime event - DB 스키마 기반"""
     id: UUID
     tenant_id: UUID
-    event_no: str
-    equipment_code: str
-    line_code: str
-    start_time: datetime
+    equipment_id: Optional[UUID] = None
+    equipment_code: Optional[str] = None
+    line_code: Optional[str] = None
+    start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     duration_min: Optional[float] = None
-    downtime_category: DowntimeCategory
-    downtime_code: str
+    downtime_type: Optional[str] = None
+    downtime_code: Optional[str] = None
     downtime_reason: Optional[str] = None
-    alarm_code: Optional[str] = None
-    alarm_message: Optional[str] = None
-    production_order_no: Optional[str] = None
-    product_code: Optional[str] = None
-    operator_code: Optional[str] = None
     root_cause: Optional[str] = None
     corrective_action: Optional[str] = None
-    maintenance_ticket_no: Optional[str] = None
-    impact_qty: Optional[Decimal] = None
-    impact_cost: Optional[Decimal] = None
-    status: str
-    resolved_by: Optional[str] = None
-    resolved_at: Optional[datetime] = None
-    notes: Optional[str] = None
+    production_order_no: Optional[str] = None
     reported_by: Optional[str] = None
-    created_at: datetime
+    resolved_by: Optional[str] = None
+    created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)

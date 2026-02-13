@@ -226,14 +226,14 @@ async def get_oee_trend(
 
 # ==================== Downtime - Static Routes ====================
 
-@router.get("/downtime", response_model=List[DowntimeEventResponse])
+@router.get("/downtime")
 async def get_downtime_events(
     db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     equipment_code: Optional[str] = None,
     line_code: Optional[str] = None,
-    status: Optional[str] = None,
+    downtime_type: Optional[str] = None,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
 ):
@@ -246,8 +246,8 @@ async def get_downtime_events(
         query = query.where(DowntimeEvent.equipment_code == equipment_code)
     if line_code:
         query = query.where(DowntimeEvent.line_code == line_code)
-    if status:
-        query = query.where(DowntimeEvent.status == status)
+    if downtime_type:
+        query = query.where(DowntimeEvent.downtime_type == downtime_type)
     if start_date:
         query = query.where(DowntimeEvent.start_time >= datetime.combine(start_date, datetime.min.time()))
     if end_date:
@@ -259,7 +259,7 @@ async def get_downtime_events(
     result = await db.execute(query)
     events = result.scalars().all()
 
-    return [DowntimeEventResponse.model_validate(e) for e in events]
+    return {"items": [DowntimeEventResponse.model_validate(e) for e in events], "total": len(events)}
 
 
 @router.post("/downtime", response_model=DowntimeEventResponse)
@@ -373,14 +373,14 @@ async def create_maintenance_record(
 
 # ==================== Equipment Master - List Route ====================
 
-@router.get("", response_model=List[EquipmentMasterResponse])
+@router.get("")
 async def get_equipment_list(
     db: AsyncSession = Depends(get_db),
     line_code: Optional[str] = None,
     equipment_type: Optional[str] = None,
-    status: Optional[str] = None,
+    is_active: Optional[bool] = None,
 ):
-    """Get list of equipment"""
+    """Get list of equipment - 실제 DB 데이터 반환"""
     tenant_id = UUID(settings.default_tenant_id)
 
     query = select(EquipmentMaster).where(EquipmentMaster.tenant_id == tenant_id)
@@ -389,15 +389,35 @@ async def get_equipment_list(
         query = query.where(EquipmentMaster.line_code == line_code)
     if equipment_type:
         query = query.where(EquipmentMaster.equipment_type == equipment_type)
-    if status:
-        query = query.where(EquipmentMaster.status == status)
+    if is_active is not None:
+        query = query.where(EquipmentMaster.is_active == is_active)
 
-    query = query.order_by(EquipmentMaster.line_code, EquipmentMaster.position_in_line)
+    query = query.order_by(EquipmentMaster.line_code, EquipmentMaster.equipment_code)
 
     result = await db.execute(query)
-    equipment = result.scalars().all()
+    equipment_list = result.scalars().all()
 
-    return [EquipmentMasterResponse.model_validate(e) for e in equipment]
+    return {
+        "items": [
+            {
+                "id": str(e.id),
+                "equipment_code": e.equipment_code,
+                "equipment_name": e.equipment_name,
+                "equipment_type": e.equipment_type,
+                "line_id": str(e.line_id) if e.line_id else None,
+                "line_code": e.line_code,
+                "manufacturer": e.manufacturer,
+                "model": e.model,
+                "serial_no": e.serial_no,
+                "install_date": e.install_date.isoformat() if e.install_date else None,
+                "is_active": e.is_active,
+                "created_at": e.created_at.isoformat() if e.created_at else None,
+                "updated_at": e.updated_at.isoformat() if e.updated_at else None,
+            }
+            for e in equipment_list
+        ],
+        "total": len(equipment_list),
+    }
 
 
 # ==================== Dynamic Routes (MUST be defined AFTER static routes) ====================

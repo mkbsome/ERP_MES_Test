@@ -32,65 +32,20 @@ class ProductionLine(BaseModel, TimestampMixin):
 
 
 class EquipmentMaster(BaseModel, TimestampMixin):
-    """설비 마스터 (mes_equipment_master)"""
-    __tablename__ = "mes_equipment_master"
-    __table_args__ = (
-        CheckConstraint(
-            """equipment_type IN (
-                'loader', 'unloader', 'printer', 'spi', 'mounter', 'reflow', 'aoi', 'xray',
-                'wave', 'selective', 'dispenser', 'insertion', 'inspection', 'test',
-                'conveyor', 'robot', 'laser', 'coating', 'other'
-            )""",
-            name="ck_mes_equipment_type"
-        ),
-        CheckConstraint(
-            "status IN ('active', 'inactive', 'maintenance', 'retired')",
-            name="ck_mes_equipment_status"
-        ),
-        Index("idx_mes_equipment_line", "tenant_id", "line_code", "position_in_line"),
-        Index("idx_mes_equipment_type", "equipment_type"),
-        {"extend_existing": True},
-    )
+    """설비 마스터 (mes_equipment) - 실제 DB 스키마 기반"""
+    __tablename__ = "mes_equipment"
+    __table_args__ = {"extend_existing": True}
 
-    equipment_code: Mapped[str] = mapped_column(String(30), nullable=False, unique=True)
+    equipment_code: Mapped[str] = mapped_column(String(50), nullable=False)
     equipment_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    equipment_type: Mapped[str] = mapped_column(String(30), nullable=False)
-    equipment_category: Mapped[Optional[str]] = mapped_column(String(30))  # SMT, THT, Assembly, Test
-
-    # Line position
-    line_code: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
-    position_in_line: Mapped[Optional[int]] = mapped_column(Integer)
-
-    # Specs
+    equipment_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    line_id: Mapped[Optional[UUID]] = mapped_column(PGUUID(as_uuid=True))
+    line_code: Mapped[Optional[str]] = mapped_column(String(20))
     manufacturer: Mapped[Optional[str]] = mapped_column(String(100))
     model: Mapped[Optional[str]] = mapped_column(String(100))
     serial_no: Mapped[Optional[str]] = mapped_column(String(50))
-    firmware_version: Mapped[Optional[str]] = mapped_column(String(30))
-
-    # Installation
     install_date: Mapped[Optional[date]] = mapped_column(Date)
-    warranty_end_date: Mapped[Optional[date]] = mapped_column(Date)
-
-    # Capacity
-    standard_cycle_time_sec: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))
-    max_capacity_per_hour: Mapped[Optional[int]] = mapped_column(Integer)
-
-    # Communication
-    ip_address: Mapped[Optional[str]] = mapped_column(String(50))
-    port: Mapped[Optional[int]] = mapped_column(Integer)
-    communication_protocol: Mapped[Optional[str]] = mapped_column(String(30))
-    plc_address: Mapped[Optional[str]] = mapped_column(String(100))
-
-    # Maintenance
-    last_pm_date: Mapped[Optional[date]] = mapped_column(Date)
-    next_pm_date: Mapped[Optional[date]] = mapped_column(Date)
-    pm_interval_days: Mapped[int] = mapped_column(Integer, default=30)
-
-    # Status
-    status: Mapped[str] = mapped_column(String(20), default="active")
-
-    # Attributes
-    attributes: Mapped[Optional[dict]] = mapped_column(JSONB)
+    is_active: Mapped[bool] = mapped_column(default=True)
 
 
 class EquipmentStatus(BaseModel):
@@ -219,68 +174,29 @@ class EquipmentOEE(BaseModel):
 
 
 class DowntimeEvent(BaseModel, TimestampMixin):
-    """비가동 이벤트 (mes_downtime_event)"""
+    """비가동 이벤트 (mes_downtime_event) - 실제 DB 스키마 기반"""
     __tablename__ = "mes_downtime_event"
-    __table_args__ = (
-        CheckConstraint(
-            """downtime_category IN (
-                'breakdown', 'planned_maintenance', 'unplanned_maintenance',
-                'setup', 'changeover', 'material_shortage', 'quality_issue',
-                'operator_absence', 'waiting', 'other'
-            )""",
-            name="ck_mes_downtime_category"
-        ),
-        CheckConstraint(
-            "status IN ('open', 'in_progress', 'resolved', 'closed')",
-            name="ck_mes_downtime_status"
-        ),
-        Index("idx_mes_downtime_equipment", "tenant_id", "equipment_code", "start_time"),
-        Index("idx_mes_downtime_category", "downtime_category", "downtime_code"),
-        {"extend_existing": True},
-    )
+    __table_args__ = {"extend_existing": True}
 
-    event_no: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
-    equipment_code: Mapped[str] = mapped_column(String(30), nullable=False)
-    line_code: Mapped[str] = mapped_column(String(20), nullable=False)
+    equipment_id: Mapped[Optional[UUID]] = mapped_column(PGUUID(as_uuid=True))
+    equipment_code: Mapped[Optional[str]] = mapped_column(String(50))
+    line_code: Mapped[Optional[str]] = mapped_column(String(50))
 
     # Timing
-    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    start_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    duration_min: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))
 
     # Classification
-    downtime_category: Mapped[str] = mapped_column(String(30), nullable=False)
-    downtime_code: Mapped[str] = mapped_column(String(20), nullable=False)
+    downtime_type: Mapped[Optional[str]] = mapped_column(String(50))
+    downtime_code: Mapped[Optional[str]] = mapped_column(String(50))
     downtime_reason: Mapped[Optional[str]] = mapped_column(Text)
-
-    # Alarm
-    alarm_code: Mapped[Optional[str]] = mapped_column(String(30))
-    alarm_message: Mapped[Optional[str]] = mapped_column(Text)
-
-    # Production context
-    production_order_no: Mapped[Optional[str]] = mapped_column(String(20))
-    product_code: Mapped[Optional[str]] = mapped_column(String(30))
-    operator_code: Mapped[Optional[str]] = mapped_column(String(20))
 
     # Resolution
     root_cause: Mapped[Optional[str]] = mapped_column(Text)
     corrective_action: Mapped[Optional[str]] = mapped_column(Text)
-    maintenance_ticket_no: Mapped[Optional[str]] = mapped_column(String(20))
 
-    # Impact
-    impact_qty: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 3))
-    impact_cost: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 2))
-
-    # Status
-    status: Mapped[str] = mapped_column(String(20), default="open")
-    resolved_by: Mapped[Optional[str]] = mapped_column(String(20))
-    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-
-    notes: Mapped[Optional[str]] = mapped_column(Text)
-    reported_by: Mapped[Optional[str]] = mapped_column(String(20))
-
-    @property
-    def duration_min(self) -> Optional[float]:
-        """Calculate duration in minutes"""
-        if self.end_time and self.start_time:
-            return (self.end_time - self.start_time).total_seconds() / 60.0
-        return None
+    # Context
+    production_order_no: Mapped[Optional[str]] = mapped_column(String(50))
+    reported_by: Mapped[Optional[str]] = mapped_column(String(50))
+    resolved_by: Mapped[Optional[str]] = mapped_column(String(50))

@@ -13,157 +13,65 @@ from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB, ARRAY
 from api.models.base import BaseModel, TimestampMixin
 
 
-class DefectType(BaseModel, TimestampMixin):
-    """불량 유형 마스터 (mes_defect_type)"""
+class DefectType(BaseModel):
+    """불량 유형 마스터 (mes_defect_type) - 실제 DB 스키마 기반"""
     __tablename__ = "mes_defect_type"
-    __table_args__ = (
-        CheckConstraint(
-            "severity IN ('critical', 'major', 'minor')",
-            name="ck_mes_defect_type_severity"
-        ),
-        {"extend_existing": True},
-    )
+    __table_args__ = {"extend_existing": True}
 
-    defect_code: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
-    defect_name: Mapped[str] = mapped_column(String(50), nullable=False)
-    defect_name_en: Mapped[Optional[str]] = mapped_column(String(50))
-    defect_category: Mapped[str] = mapped_column(String(20), nullable=False)  # solder, component, mechanical
-    severity: Mapped[str] = mapped_column(String(10), nullable=False)
-    detection_methods: Mapped[Optional[dict]] = mapped_column(JSONB)  # ["aoi", "visual", "ict"]
-    description: Mapped[Optional[str]] = mapped_column(Text)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    defect_code: Mapped[Optional[str]] = mapped_column(String(50))
+    defect_name: Mapped[Optional[str]] = mapped_column(String(100))
+    defect_category: Mapped[Optional[str]] = mapped_column(String(50))
+    severity: Mapped[Optional[str]] = mapped_column(String(20))
+    is_active: Mapped[Optional[bool]] = mapped_column(Boolean, default=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
 
 class DefectDetail(BaseModel):
-    """불량 상세 (mes_defect_detail)"""
+    """불량 상세 (mes_defect_detail) - 실제 DB 스키마 기반"""
     __tablename__ = "mes_defect_detail"
-    __table_args__ = (
-        CheckConstraint(
-            "detection_point IN ('spi', 'aoi', 'xray', 'ict', 'fct', 'visual', 'customer')",
-            name="ck_mes_defect_detection"
-        ),
-        CheckConstraint(
-            """defect_category IN (
-                'solder', 'component', 'placement', 'short', 'open', 'bridge',
-                'insufficient', 'void', 'crack', 'contamination', 'mechanical', 'other'
-            )""",
-            name="ck_mes_defect_category"
-        ),
-        CheckConstraint(
-            "severity IS NULL OR severity IN ('critical', 'major', 'minor')",
-            name="ck_mes_defect_severity"
-        ),
-        CheckConstraint(
-            "repair_result IS NULL OR repair_result IN ('repaired', 'scrapped', 'pending', 'no_action')",
-            name="ck_mes_defect_repair"
-        ),
-        Index("idx_mes_defect_line", "tenant_id", "line_code", "defect_timestamp"),
-        Index("idx_mes_defect_category", "defect_category", "defect_code", "defect_timestamp"),
-        Index("idx_mes_defect_product", "product_code", "defect_timestamp"),
-        {"extend_existing": True},
-    )
+    __table_args__ = {"extend_existing": True}
 
-    defect_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    detection_point: Mapped[str] = mapped_column(String(20), nullable=False)
-
-    # Location
-    equipment_code: Mapped[str] = mapped_column(String(30), nullable=False)
-    line_code: Mapped[str] = mapped_column(String(20), nullable=False)
-
-    # Production
-    production_order_no: Mapped[Optional[str]] = mapped_column(String(20))
-    product_code: Mapped[str] = mapped_column(String(30), nullable=False)
-    lot_no: Mapped[Optional[str]] = mapped_column(String(50))
-    panel_id: Mapped[Optional[str]] = mapped_column(String(50))
-    pcb_serial: Mapped[Optional[str]] = mapped_column(String(50))
-
-    # Defect classification
-    defect_category: Mapped[str] = mapped_column(String(30), nullable=False)
-    defect_code: Mapped[str] = mapped_column(String(20), nullable=False)
-    defect_description: Mapped[Optional[str]] = mapped_column(Text)
-
-    # Location on board
-    defect_location: Mapped[Optional[str]] = mapped_column(String(100))  # Reference designator
-    component_ref: Mapped[Optional[str]] = mapped_column(String(50))
-    component_code: Mapped[Optional[str]] = mapped_column(String(30))
-    x_position: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 3))
-    y_position: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 3))
-
-    # Quantity & severity
-    defect_qty: Mapped[int] = mapped_column(Integer, default=1)
+    production_order_id: Mapped[Optional[UUID]] = mapped_column(PGUUID(as_uuid=True))
+    production_order_no: Mapped[Optional[str]] = mapped_column(String(50))
+    product_code: Mapped[Optional[str]] = mapped_column(String(50))
+    defect_timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    detection_point: Mapped[Optional[str]] = mapped_column(String(50))
+    line_code: Mapped[Optional[str]] = mapped_column(String(50))
+    equipment_code: Mapped[Optional[str]] = mapped_column(String(50))
+    defect_code: Mapped[Optional[str]] = mapped_column(String(50))
+    defect_category: Mapped[Optional[str]] = mapped_column(String(50))
     severity: Mapped[Optional[str]] = mapped_column(String(20))
-
-    # Image
-    image_url: Mapped[Optional[str]] = mapped_column(Text)
-
-    # Detection
-    detected_by: Mapped[Optional[str]] = mapped_column(String(20))
-    detection_method: Mapped[Optional[str]] = mapped_column(String(30))
-
-    # Repair
-    repair_action: Mapped[Optional[str]] = mapped_column(String(100))
-    repair_result: Mapped[Optional[str]] = mapped_column(String(20))
-    repaired_by: Mapped[Optional[str]] = mapped_column(String(20))
-    repaired_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-
-    # Root cause
-    root_cause_category: Mapped[Optional[str]] = mapped_column(String(30))
+    defect_qty: Mapped[Optional[int]] = mapped_column(Integer, default=1)
+    defect_location: Mapped[Optional[str]] = mapped_column(String(100))
+    lot_no: Mapped[Optional[str]] = mapped_column(String(50))
+    repair_result: Mapped[Optional[str]] = mapped_column(String(50))
+    root_cause_category: Mapped[Optional[str]] = mapped_column(String(50))
     root_cause_detail: Mapped[Optional[str]] = mapped_column(Text)
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=datetime.utcnow,
-    )
+    corrective_action: Mapped[Optional[str]] = mapped_column(Text)
+    worker_id: Mapped[Optional[str]] = mapped_column(String(50))
+    inspector_id: Mapped[Optional[str]] = mapped_column(String(50))
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
 
 class InspectionResult(BaseModel):
-    """검사 결과 (mes_inspection_result)"""
+    """검사 결과 (mes_inspection_result) - 실제 DB 스키마 기반"""
     __tablename__ = "mes_inspection_result"
-    __table_args__ = (
-        CheckConstraint(
-            "result IN ('PASS', 'FAIL', 'REWORK')",
-            name="ck_mes_inspection_result"
-        ),
-        Index("idx_mes_inspection_lot", "lot_no", "inspection_datetime"),
-        Index("idx_mes_inspection_product", "product_code", "inspection_datetime"),
-        Index("idx_mes_inspection_type", "inspection_type", "result"),
-        {"extend_existing": True},
-    )
+    __table_args__ = {"extend_existing": True}
 
-    inspection_no: Mapped[str] = mapped_column(String(30), nullable=False)
-    inspection_type: Mapped[str] = mapped_column(String(20), nullable=False)  # SPI, AOI, AXI, MANUAL, ICT, FCT
-
-    # Production
+    inspection_no: Mapped[Optional[str]] = mapped_column(String(50))
+    inspection_type: Mapped[Optional[str]] = mapped_column(String(50))
     production_order_id: Mapped[Optional[UUID]] = mapped_column(PGUUID(as_uuid=True))
-    lot_no: Mapped[str] = mapped_column(String(30), nullable=False)
-    board_id: Mapped[Optional[str]] = mapped_column(String(50))
-    product_code: Mapped[str] = mapped_column(String(30), nullable=False)
-
-    # Location
-    line_code: Mapped[Optional[str]] = mapped_column(String(20))
-    equipment_id: Mapped[Optional[UUID]] = mapped_column(PGUUID(as_uuid=True))
-    operation_no: Mapped[Optional[int]] = mapped_column(Integer)
-
-    # Inspection
-    inspection_datetime: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    shift: Mapped[Optional[str]] = mapped_column(String(5))
-    inspector_code: Mapped[Optional[str]] = mapped_column(String(20))
-
-    # Result
-    result: Mapped[str] = mapped_column(String(10), nullable=False)
-    total_inspected: Mapped[int] = mapped_column(Integer, default=1)
-    pass_qty: Mapped[int] = mapped_column(Integer, default=0)
-    fail_qty: Mapped[int] = mapped_column(Integer, default=0)
-
-    # Details
+    lot_no: Mapped[Optional[str]] = mapped_column(String(50))
+    product_code: Mapped[Optional[str]] = mapped_column(String(50))
+    inspection_datetime: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    inspector_id: Mapped[Optional[str]] = mapped_column(String(50))
+    sample_size: Mapped[Optional[int]] = mapped_column(Integer)
+    pass_qty: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    fail_qty: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    result: Mapped[Optional[str]] = mapped_column(String(20))
     defect_points: Mapped[Optional[dict]] = mapped_column(JSONB)
-    inspection_time_sec: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))
-    rework_flag: Mapped[bool] = mapped_column(Boolean, default=False)
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=datetime.utcnow,
-    )
+    remark: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
 
 class SPCData(BaseModel):
