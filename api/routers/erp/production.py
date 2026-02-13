@@ -381,28 +381,14 @@ async def get_bom_explosion(
                     "total_cost": 0,  # 원가 계산 필요
                 }
 
-        # DB에 없으면 Mock 데이터
+        # DB에 없으면 빈 응답 반환
         return {
             "product_code": product_code,
-            "product_name": "스마트폰 메인보드 A타입",
+            "product_name": "",
             "explosion_level": level,
-            "items": [
-                {
-                    "level": 1, "item_code": "PCB-MAIN-V3", "item_name": "메인보드 PCB V3.0",
-                    "qty_per": 1, "unit": "EA", "total_qty": 1,
-                    "children": [
-                        {"level": 2, "item_code": "FR4-1.6MM", "item_name": "FR4 기판 1.6mm", "qty_per": 1, "unit": "EA", "total_qty": 1},
-                        {"level": 2, "item_code": "CU-35UM", "item_name": "구리박 35μm", "qty_per": 0.5, "unit": "M2", "total_qty": 0.5},
-                    ]
-                },
-                {
-                    "level": 1, "item_code": "IC-STM32F4", "item_name": "STM32F407VGT6 MCU",
-                    "qty_per": 1, "unit": "EA", "total_qty": 1,
-                    "children": []
-                },
-            ],
-            "total_components": 156,
-            "total_cost": 42500,
+            "items": [],
+            "total_components": 0,
+            "total_cost": 0,
         }
     except Exception as e:
         print(f"Error in BOM explosion: {e}")
@@ -583,27 +569,7 @@ async def create_work_order(
     except Exception as e:
         await db.rollback()
         print(f"Error creating work order: {e}")
-        # Mock 응답 반환
-        now = datetime.utcnow()
-        return WorkOrderResponse(
-            id=100,
-            order_no=f"WO-{now.strftime('%Y')}-{random.randint(1000, 9999)}",
-            product_code=data.product_code,
-            product_name="신규 제품",
-            qty=data.qty,
-            produced_qty=0,
-            start_date=data.start_date,
-            end_date=data.end_date,
-            line_code=data.line_code,
-            line_name=f"라인 {data.line_code}",
-            status="planned",
-            progress=0,
-            priority=data.priority,
-            sales_order_no=data.sales_order_no,
-            remarks=data.remarks,
-            created_at=now.isoformat(),
-            updated_at=now.isoformat(),
-        )
+        raise HTTPException(status_code=500, detail=f"작업지시 생성 실패: {str(e)}")
 
 
 @router.get("/work-orders/{order_id}", response_model=WorkOrderResponse)
@@ -625,25 +591,7 @@ async def get_work_order(
         raise
     except Exception as e:
         print(f"Error fetching work order: {e}")
-        # Mock 응답
-        return WorkOrderResponse(
-            id=order_id,
-            order_no=f"WO-2024-{order_id:04d}",
-            product_code="SMT-MB-001",
-            product_name="스마트폰 메인보드 A타입",
-            qty=1000,
-            produced_qty=650,
-            start_date="2024-12-15",
-            end_date="2024-12-18",
-            line_code="SMT-L01",
-            line_name="SMT 1라인",
-            status="in_progress",
-            progress=65.0,
-            priority=1,
-            sales_order_no="SO-2024-0892",
-            created_at="2024-12-14T00:00:00",
-            updated_at="2024-12-15T10:00:00",
-        )
+        raise HTTPException(status_code=500, detail=f"작업지시 조회 실패: {str(e)}")
 
 
 @router.post("/work-orders/{order_id}/release")
@@ -721,21 +669,38 @@ async def get_weekly_production_plan(
 ):
     """주간 생산 계획 조회"""
     try:
-        # 실제로는 ProductionOrder에서 주간 데이터 집계
-        # 현재는 Mock 데이터 반환
-        return [
-            WeeklyProductionPlan(day="월", planned=5000, actual=4800),
-            WeeklyProductionPlan(day="화", planned=5000, actual=5100),
-            WeeklyProductionPlan(day="수", planned=5000, actual=4950),
-            WeeklyProductionPlan(day="목", planned=5000, actual=5200),
-            WeeklyProductionPlan(day="금", planned=5000, actual=0),
-        ]
+        from datetime import timedelta
+        today = datetime.utcnow().date()
+        # 이번 주 월요일 찾기
+        start_of_week = today - timedelta(days=today.weekday())
+
+        result = []
+        days = ["월", "화", "수", "목", "금"]
+
+        for i, day_name in enumerate(days):
+            target_date = start_of_week + timedelta(days=i)
+
+            # 해당 날짜의 계획/실적 조회
+            planned_query = select(func.sum(ProductionOrder.target_qty)).where(
+                func.date(ProductionOrder.planned_start) == target_date
+            )
+            actual_query = select(func.sum(ProductionOrder.produced_qty)).where(
+                func.date(ProductionOrder.planned_start) == target_date
+            )
+
+            planned_result = await db.execute(planned_query)
+            actual_result = await db.execute(actual_query)
+
+            planned = planned_result.scalar() or 0
+            actual = actual_result.scalar() or 0
+
+            result.append(WeeklyProductionPlan(
+                day=day_name,
+                planned=int(planned),
+                actual=int(actual)
+            ))
+
+        return result
     except Exception as e:
         print(f"Error fetching weekly plan: {e}")
-        return [
-            WeeklyProductionPlan(day="월", planned=5000, actual=4800),
-            WeeklyProductionPlan(day="화", planned=5000, actual=5100),
-            WeeklyProductionPlan(day="수", planned=5000, actual=4950),
-            WeeklyProductionPlan(day="목", planned=5000, actual=5200),
-            WeeklyProductionPlan(day="금", planned=5000, actual=0),
-        ]
+        raise HTTPException(status_code=500, detail=f"주간 생산 계획 조회 실패: {str(e)}")
