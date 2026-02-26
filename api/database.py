@@ -1,11 +1,15 @@
 """
 Database connection and session management
 """
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
+import asyncpg
 
 from api.config import settings
+
+# asyncpg pool for raw SQL operations
+_asyncpg_pool: Optional[asyncpg.Pool] = None
 
 
 # Create async engine
@@ -54,4 +58,23 @@ async def init_db() -> None:
 
 async def close_db() -> None:
     """Close database connections"""
+    global _asyncpg_pool
     await engine.dispose()
+    if _asyncpg_pool:
+        await _asyncpg_pool.close()
+        _asyncpg_pool = None
+
+
+async def get_db_pool() -> asyncpg.Pool:
+    """Get asyncpg connection pool for raw SQL operations"""
+    global _asyncpg_pool
+    if _asyncpg_pool is None:
+        # Convert SQLAlchemy URL to asyncpg format
+        # postgresql+asyncpg://user:pass@host:port/db -> postgresql://user:pass@host:port/db
+        db_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+        _asyncpg_pool = await asyncpg.create_pool(
+            db_url,
+            min_size=2,
+            max_size=10,
+        )
+    return _asyncpg_pool

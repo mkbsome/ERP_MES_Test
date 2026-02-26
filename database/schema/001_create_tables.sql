@@ -1369,8 +1369,8 @@ CREATE TABLE mes_equipment_oee (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 -- 함수 표현식을 포함한 UNIQUE INDEX
-CREATE UNIQUE INDEX IF NOT EXISTS idx_mes_oee_record_unique
-ON mes_oee_record(tenant_id, equipment_code, oee_date, COALESCE(shift, ''));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mes_equipment_oee_unique
+ON mes_equipment_oee(tenant_id, equipment_code, oee_date, COALESCE(shift, ''));
 
 -- 14.3 비가동 이벤트
 CREATE TABLE mes_downtime_event (
@@ -1492,8 +1492,8 @@ CREATE TABLE mes_material_inventory (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 -- 함수 표현식을 포함한 UNIQUE INDEX
-CREATE UNIQUE INDEX IF NOT EXISTS idx_mes_line_inventory_unique
-ON mes_line_inventory(tenant_id, location_code, material_code, COALESCE(lot_no, ''));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mes_material_inventory_unique
+ON mes_material_inventory(tenant_id, location_code, material_code, COALESCE(lot_no, ''));
 
 -- ============================================================
 -- PART 16: 시스템 관리 (System)

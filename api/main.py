@@ -82,17 +82,26 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configure CORS - Allow all localhost origins for development
-CORS_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
-]
+# Configure CORS - 환경변수에서 동적으로 로드
+# 로컬 개발 시 기본값, AWS 배포 시 MES_CORS_ORIGINS 환경변수로 설정
+CORS_ORIGINS = settings.cors_origins_list
+
+# 로컬 개발용 기본 origins 추가
+if settings.debug:
+    local_origins = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3003",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:3003",
+    ]
+    CORS_ORIGINS = list(set(CORS_ORIGINS + local_origins))
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -130,14 +139,18 @@ app.include_router(generator_router, prefix="/api/v1")
 app.include_router(websocket_router)
 
 
-# Health check endpoint
+# Health check endpoint (AWS ALB/ECS 호환)
 @app.get("/health", tags=["System"])
 async def health_check():
-    """Health check endpoint"""
+    """
+    Health check endpoint
+    AWS ALB/ECS에서 사용하는 상태 체크용
+    """
     return {
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
+        "environment": "production" if settings.is_production else "development",
     }
 
 

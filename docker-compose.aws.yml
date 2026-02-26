@@ -1,0 +1,50 @@
+# AWS 배포 전 로컬 테스트용 Docker Compose
+# 사용법: docker-compose -f docker-compose.aws.yml up --build
+
+version: '3.8'
+
+services:
+  # API 서버
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: erp-mes-api
+    ports:
+      - "8001:8000"
+    environment:
+      - MES_DEBUG=true
+      - MES_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/erp_mes_db
+      - MES_CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:5174
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # PostgreSQL (로컬 테스트용, AWS에서는 RDS 사용)
+  postgres:
+    image: postgres:15-alpine
+    container_name: erp-mes-db
+    environment:
+      POSTGRES_DB: erp_mes_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
