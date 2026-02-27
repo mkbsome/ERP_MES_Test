@@ -10,6 +10,21 @@ from config import TENANT_ID, SCENARIO_PATH, DATA_PERIOD
 
 fake = Faker('ko_KR')
 
+# 전역 순차 번호 카운터 (중복 방지)
+_sequence_counters = {}
+
+def get_next_sequence(prefix: str) -> int:
+    """prefix별 순차 번호 반환"""
+    if prefix not in _sequence_counters:
+        _sequence_counters[prefix] = 0
+    _sequence_counters[prefix] += 1
+    return _sequence_counters[prefix]
+
+def reset_sequences():
+    """모든 시퀀스 초기화 (--clean 옵션 시 사용)"""
+    global _sequence_counters
+    _sequence_counters = {}
+
 class BaseGenerator:
     """생성기 기본 클래스"""
 

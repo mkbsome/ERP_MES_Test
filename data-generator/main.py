@@ -24,6 +24,7 @@ from generators import (
     HRDataGenerator,
     InventoryDataGenerator,
 )
+from generators.base import reset_sequences
 from db_connection import truncate_tables
 from config import DATA_PERIOD
 
@@ -121,6 +122,7 @@ def main():
     if args.clean:
         print("기존 데이터 삭제 중...")
         truncate_tables(TABLES_TO_TRUNCATE)
+        reset_sequences()  # 시퀀스 번호도 초기화
         print()
 
     # 생성 실행

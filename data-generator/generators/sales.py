@@ -89,7 +89,7 @@ class SalesDataGenerator(BaseGenerator):
         customer = random.choice(grade_customers)
 
         # 수주번호 생성
-        order_no = f"SO{order_date.strftime('%Y%m%d')}{random.randint(1000, 9999)}"
+        order_no = self.generate_doc_no("SO", order_date)
 
         # 납기일
         delivery_days = random.randint(
@@ -159,7 +159,7 @@ class SalesDataGenerator(BaseGenerator):
 
         ship_data = []
         for order in orders:
-            ship_no = f"SH{order['order_date'].strftime('%Y%m%d')}{random.randint(1000, 9999)}"
+            ship_no = self.generate_doc_no("SH", order['order_date'])
             ship_date = order['delivery_date'] - timedelta(days=random.randint(0, 3))
 
             ship_data.append((

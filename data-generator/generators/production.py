@@ -109,7 +109,7 @@ class ProductionDataGenerator(BaseGenerator):
     def _create_work_order(self, plan_date, status):
         """개별 제조오더 생성"""
         product = random.choice(self.products)
-        wo_no = f"WO{plan_date.strftime('%Y%m%d')}{random.randint(1000, 9999)}"
+        wo_no = self.generate_doc_no("WO", plan_date)
 
         # 수주 연계
         so_linked = random.random() < float(self.cfg['work_orders']['sales_order_linked'].replace('%', '')) / 100
@@ -147,7 +147,6 @@ class ProductionDataGenerator(BaseGenerator):
         """, (TENANT_ID,))
 
         mo_count = 0
-        mo_seq = 1  # 시퀀스 카운터 추가
         for wo in work_orders:
             # 제조오더당 1~3개 작업지시
             mo_per_wo = random.randint(
@@ -160,8 +159,7 @@ class ProductionDataGenerator(BaseGenerator):
                 if remaining_qty <= 0:
                     break
 
-                mo_no = f"MO{wo['planned_start'].strftime('%Y%m%d')}{str(mo_seq).zfill(6)}"
-                mo_seq += 1
+                mo_no = self.generate_doc_no("MO", wo['planned_start'])
                 line = random.choice(self.lines) if self.lines else {'line_code': 'LINE001'}
 
                 # 수량 분배

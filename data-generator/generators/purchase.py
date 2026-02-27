@@ -80,7 +80,7 @@ class PurchaseDataGenerator(BaseGenerator):
     def _create_purchase_order(self, order_date, status):
         """개별 발주 생성"""
         vendor = random.choice(self.vendors)
-        po_no = f"PO{order_date.strftime('%Y%m%d')}{random.randint(1000, 9999)}"
+        po_no = self.generate_doc_no("PO", order_date)
         expected_date = order_date + timedelta(days=random.randint(7, 30))
 
         # 발주 헤더 (po_date 사용)
@@ -148,7 +148,7 @@ class PurchaseDataGenerator(BaseGenerator):
         gr_count = 0
 
         for order in orders:
-            receipt_no = f"GR{order['expected_date'].strftime('%Y%m%d')}{random.randint(1000, 9999)}"
+            receipt_no = self.generate_doc_no("GR", order['expected_date'])
 
             # 납기 준수율 적용
             on_time = random.random() < float(self.cfg['goods_receipts']['on_time_rate'].replace('%', '')) / 100
